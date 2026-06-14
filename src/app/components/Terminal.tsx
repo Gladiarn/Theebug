@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { useGame } from './GameContext';
+import { useTheme } from './ThemeContext';
 
 const TABS = ['TERMINAL', 'PROBLEMS', 'OUTPUT', 'DEBUG CONSOLE'];
 
 export function Terminal() {
   const { terminalLogs } = useGame();
+  const { theme } = useTheme();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -15,23 +17,22 @@ export function Terminal() {
     <div
       style={{
         height: '110px',
-        background: '#1E1E1E',
-        borderTop: '1px solid #3A3A3A',
+        background: theme.editorBg,
+        borderTop: `1px solid ${theme.border}`,
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
+        transition: 'background 0.2s',
       }}
     >
-      {/* Tab strip */}
       <div
         style={{
           height: '27px',
-          background: '#252526',
+          background: theme.panelBg,
           display: 'flex',
           alignItems: 'center',
           padding: '0 12px',
-          gap: '0',
-          borderBottom: '1px solid #3A3A3A',
+          borderBottom: `1px solid ${theme.border}`,
           flexShrink: 0,
         }}
       >
@@ -44,8 +45,8 @@ export function Terminal() {
               display: 'flex',
               alignItems: 'center',
               fontSize: '11px',
-              color: i === 0 ? '#CCCCCC' : '#777',
-              borderBottom: i === 0 ? '1px solid #CCCCCC' : '1px solid transparent',
+              color: i === 0 ? theme.text : theme.textMuted,
+              borderBottom: i === 0 ? `1px solid ${theme.text}` : '1px solid transparent',
               cursor: 'pointer',
               userSelect: 'none',
               letterSpacing: '0.03em',
@@ -54,48 +55,32 @@ export function Terminal() {
             {tab}
           </div>
         ))}
-
         <div style={{ flex: 1 }} />
-
-        {/* Decorative icons */}
-        <div style={{ display: 'flex', gap: '10px', color: '#888', fontSize: '13px' }}>
+        <div style={{ display: 'flex', gap: '10px', color: theme.textMuted, fontSize: '13px' }}>
           <span style={{ cursor: 'pointer' }}>⊕</span>
           <span style={{ cursor: 'pointer' }}>⋮</span>
           <span style={{ cursor: 'pointer' }}>×</span>
         </div>
       </div>
 
-      {/* Terminal output */}
       <div
         style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '4px 12px 4px',
-          fontFamily: "'Consolas', 'Courier New', monospace",
+          padding: '4px 12px',
+          fontFamily: "'JetBrains Mono', 'Consolas', monospace",
           fontSize: '12px',
-          color: '#CCCCCC',
+          color: theme.text,
         }}
       >
         {terminalLogs.map((log, i) => {
           const isSystem = log.startsWith('[system]');
-          const isDrop = log.startsWith('[drop]');
           const isCorrect = log.includes('✓');
           const isWrong = log.includes('✗');
-
           return (
             <div key={i} style={{ lineHeight: '1.6', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-              <span style={{ color: '#4EC9B0', flexShrink: 0 }}>$</span>
-              <span
-                style={{
-                  color: isSystem
-                    ? '#888'
-                    : isCorrect
-                    ? '#6A9955'
-                    : isWrong
-                    ? '#F48771'
-                    : '#CCCCCC',
-                }}
-              >
+              <span style={{ color: theme.accent, flexShrink: 0 }}>$</span>
+              <span style={{ color: isSystem ? theme.textMuted : isCorrect ? theme.accentGreen : isWrong ? theme.accentRed : theme.text }}>
                 {log}
               </span>
             </div>

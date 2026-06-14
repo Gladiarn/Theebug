@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useDrop } from 'react-dnd';
 import { BLOCK_TYPE, DragItem } from './DraggableBlock';
 import { useGame } from './GameContext';
+import { useTheme } from './ThemeContext';
 import { SyntaxText } from './SyntaxText';
 
 interface Props {
@@ -10,43 +11,34 @@ interface Props {
 
 export function DropZone({ zoneId }: Props) {
   const { zoneFills, dropBlock } = useGame();
+  const { theme } = useTheme();
   const fill = zoneFills[zoneId];
   const ref = useRef<HTMLSpanElement>(null);
 
   const [{ isOver, canDrop }, drop] = useDrop<DragItem, void, { isOver: boolean; canDrop: boolean }>({
     accept: BLOCK_TYPE,
-    drop: item => {
-      dropBlock(zoneId, item.code);
-    },
-    collect: monitor => ({
-      isOver: monitor.isOver(),
-      canDrop: monitor.canDrop(),
-    }),
+    drop: item => dropBlock(zoneId, item.code),
+    collect: monitor => ({ isOver: monitor.isOver(), canDrop: monitor.canDrop() }),
   });
   drop(ref);
 
-  let bg = '#2D2D2D';
-  let border = '1.5px dashed #4EC9B0';
+  let bg = theme.dropEmptyBg;
+  let border = `1.5px dashed ${theme.dropEmptyBorder}`;
   let content: React.ReactNode = (
-    <span style={{ color: '#4EC9B0', opacity: 0.55, letterSpacing: '2px', fontSize: '11px' }}>
+    <span style={{ color: theme.accent, opacity: 0.55, letterSpacing: '2px', fontSize: '11px' }}>
       ______
     </span>
   );
 
   if (fill) {
-    if (fill.correct) {
-      bg = '#1E3A2A';
-      border = '1.5px solid #6A9955';
-    } else {
-      bg = '#3A1E1A';
-      border = '1.5px solid #F48771';
-    }
+    bg = fill.correct ? theme.dropCorrectBg : theme.dropWrongBg;
+    border = `1.5px solid ${fill.correct ? theme.dropCorrectBorder : theme.dropWrongBorder}`;
     content = <SyntaxText code={fill.code} />;
   }
 
   if (isOver && canDrop) {
-    bg = '#2A3A4A';
-    border = '1.5px dashed #9CDCFE';
+    bg = theme.dropHoverBg;
+    border = `1.5px dashed ${theme.accentBlue}`;
   }
 
   return (
@@ -61,7 +53,7 @@ export function DropZone({ zoneId }: Props) {
         borderRadius: '3px',
         background: bg,
         border,
-        fontFamily: "'Consolas', 'Courier New', monospace",
+        fontFamily: "'JetBrains Mono', 'Consolas', monospace",
         fontSize: '13px',
         transition: 'background 0.15s, border-color 0.15s',
         verticalAlign: 'middle',

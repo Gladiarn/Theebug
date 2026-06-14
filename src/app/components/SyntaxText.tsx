@@ -1,6 +1,10 @@
+import { useTheme } from './ThemeContext';
+
+type ColorKey = 'keyword' | 'string' | 'number' | 'function' | 'variable' | 'comment' | 'plain';
+
 interface Token {
   text: string;
-  color: string;
+  colorKey: ColorKey;
 }
 
 const KEYWORDS = new Set([
@@ -15,16 +19,14 @@ function tokenize(code: string): Token[] {
   while (pos < code.length) {
     const ch = code[pos];
 
-    // Comment
     if (code.startsWith('//', pos)) {
       const end = code.indexOf('\n', pos);
       const text = end === -1 ? code.slice(pos) : code.slice(pos, end);
-      tokens.push({ text, color: '#6A9955' });
+      tokens.push({ text, colorKey: 'comment' });
       pos += text.length;
       continue;
     }
 
-    // String literal
     if (ch === '"' || ch === "'" || ch === '`') {
       let j = pos + 1;
       while (j < code.length) {
@@ -32,56 +34,49 @@ function tokenize(code: string): Token[] {
         if (code[j] === ch) { j++; break; }
         j++;
       }
-      tokens.push({ text: code.slice(pos, j), color: '#CE9178' });
+      tokens.push({ text: code.slice(pos, j), colorKey: 'string' });
       pos = j;
       continue;
     }
 
-    // Number
     if (/\d/.test(ch)) {
       let j = pos;
       while (j < code.length && /[\d.]/.test(code[j])) j++;
-      tokens.push({ text: code.slice(pos, j), color: '#B5CEA8' });
+      tokens.push({ text: code.slice(pos, j), colorKey: 'number' });
       pos = j;
       continue;
     }
 
-    // Operator tokens (arrows, comparisons, etc.)
-    const op2 = code.slice(pos, pos + 3);
-    if (['===', '!==', '=>'].includes(op2)) {
-      tokens.push({ text: op2, color: '#CCCCCC' });
+    const op3 = code.slice(pos, pos + 3);
+    if (op3 === '===' || op3 === '!==') {
+      tokens.push({ text: op3, colorKey: 'plain' });
       pos += 3;
       continue;
     }
-    const op1 = code.slice(pos, pos + 2);
-    if (['>=', '<=', '==', '!=', '&&', '||', '++', '--', '=>'].includes(op1)) {
-      tokens.push({ text: op1, color: '#CCCCCC' });
+
+    const op2 = code.slice(pos, pos + 2);
+    if (['>=', '<=', '==', '!=', '&&', '||', '++', '--', '=>'].includes(op2)) {
+      tokens.push({ text: op2, colorKey: 'plain' });
       pos += 2;
       continue;
     }
 
-    // Identifier / keyword
     if (/[a-zA-Z_$]/.test(ch)) {
       let j = pos;
       while (j < code.length && /[a-zA-Z0-9_$]/.test(code[j])) j++;
       const word = code.slice(pos, j);
-      // Look ahead past spaces for '('
       let k = j;
       while (k < code.length && code[k] === ' ') k++;
       const isCall = k < code.length && code[k] === '(';
-
-      let color = '#CCCCCC';
-      if (KEYWORDS.has(word)) color = '#569CD6';
-      else if (isCall) color = '#DCDCAA';
-      else color = '#9CDCFE';
-
-      tokens.push({ text: word, color });
+      let colorKey: ColorKey = 'variable';
+      if (KEYWORDS.has(word)) colorKey = 'keyword';
+      else if (isCall) colorKey = 'function';
+      tokens.push({ text: word, colorKey });
       pos = j;
       continue;
     }
 
-    // Default single char
-    tokens.push({ text: ch, color: '#CCCCCC' });
+    tokens.push({ text: ch, colorKey: 'plain' });
     pos++;
   }
 
@@ -89,11 +84,20 @@ function tokenize(code: string): Token[] {
 }
 
 export function SyntaxText({ code }: { code: string }) {
-  const tokens = tokenize(code);
+  const { theme } = useTheme();
+  const colorMap: Record<ColorKey, string> = {
+    keyword: theme.codeKeyword,
+    string: theme.codeString,
+    number: theme.codeNumber,
+    function: theme.codeFunction,
+    variable: theme.codeVariable,
+    comment: theme.codeComment,
+    plain: theme.codePlain,
+  };
   return (
     <>
-      {tokens.map((t, i) => (
-        <span key={i} style={{ color: t.color }}>{t.text}</span>
+      {tokenize(code).map((t, i) => (
+        <span key={i} style={{ color: colorMap[t.colorKey] }}>{t.text}</span>
       ))}
     </>
   );

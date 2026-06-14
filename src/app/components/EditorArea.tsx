@@ -1,4 +1,5 @@
 import { useGame } from './GameContext';
+import { useTheme } from './ThemeContext';
 import { LEVELS } from './gameData';
 import { DropZone } from './DropZone';
 import { SyntaxText } from './SyntaxText';
@@ -18,143 +19,69 @@ function parseLine(line: string): Segment[] {
 
 export function EditorArea() {
   const { currentLevelIndex } = useGame();
+  const { theme } = useTheme();
   const level = LEVELS[currentLevelIndex];
 
   return (
-    <div
-      style={{
-        flex: 1,
-        background: '#1E1E1E',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
-    >
+    <div style={{ flex: 1, background: theme.editorBg, display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'background 0.2s' }}>
       {/* Tab bar */}
-      <div
-        style={{
-          background: '#252526',
-          borderBottom: '1px solid #3A3A3A',
-          display: 'flex',
-          alignItems: 'center',
-          height: '35px',
-          flexShrink: 0,
-        }}
-      >
+      <div style={{ background: theme.sidebarBg, borderBottom: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', height: '35px', flexShrink: 0 }}>
         <div
           style={{
             padding: '0 16px',
             height: '100%',
             display: 'flex',
             alignItems: 'center',
-            background: '#1E1E1E',
-            borderRight: '1px solid #3A3A3A',
-            borderTop: '1px solid #0078D4',
+            background: theme.editorBg,
+            borderRight: `1px solid ${theme.border}`,
+            borderTop: `1px solid ${theme.accentBlue}`,
             fontSize: '13px',
-            color: '#CCCCCC',
+            color: theme.text,
             gap: '8px',
           }}
         >
-          <span style={{ fontSize: '12px' }}>
-            <span style={{ color: '#e8bf6a', fontWeight: 'bold' }}>JS</span>
-          </span>
+          <span style={{ color: '#e8bf6a', fontSize: '12px', fontWeight: 'bold' }}>JS</span>
           <span>{level.filename}</span>
-          <span
-            style={{
-              color: '#888',
-              cursor: 'pointer',
-              fontSize: '14px',
-              padding: '0 3px',
-              lineHeight: 1,
-            }}
-          >
-            ×
-          </span>
+          <span style={{ color: theme.textMuted, cursor: 'pointer', fontSize: '14px', padding: '0 3px' }}>×</span>
         </div>
         <div style={{ flex: 1 }} />
       </div>
 
       {/* Breadcrumb */}
-      <div
-        style={{
-          background: '#1E1E1E',
-          borderBottom: '1px solid #2A2A2A',
-          padding: '3px 16px',
-          fontSize: '12px',
-          color: '#888',
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px',
-        }}
-      >
+      <div style={{ background: theme.editorBg, borderBottom: `1px solid ${theme.borderLight}`, padding: '3px 16px', fontSize: '12px', color: theme.textMuted, flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
         <span>CODE_CANVAS</span>
         <span>›</span>
-        <span style={{ color: '#CCCCCC' }}>{level.filename}</span>
+        <span style={{ color: theme.text }}>{level.filename}</span>
       </div>
 
       {/* Code lines */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '16px 0 24px 0',
-          fontFamily: "'Consolas', 'Courier New', monospace",
-          fontSize: '14px',
-          lineHeight: '1.75',
-        }}
-      >
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 0 24px 0', fontFamily: "'JetBrains Mono', 'Consolas', monospace", fontSize: '14px', lineHeight: '1.75' }}>
         {level.codeLines.map((line, lineIdx) => {
           const segments = parseLine(line);
-          const lineNum = lineIdx + 1;
-          const isEmpty = line === '';
 
           return (
             <div
               key={lineIdx}
               style={{ display: 'flex', minHeight: '24.5px', alignItems: 'center' }}
-              className="hover:bg-[#2A2D2E]"
+              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = theme.lineHover; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
             >
-              {/* Line number */}
-              <div
-                style={{
-                  width: '52px',
-                  textAlign: 'right',
-                  paddingRight: '20px',
-                  color: '#4A4A5A',
-                  userSelect: 'none',
-                  flexShrink: 0,
-                  fontSize: '13px',
-                  fontFamily: 'monospace',
-                }}
-              >
-                {lineNum}
+              <div style={{ width: '52px', textAlign: 'right', paddingRight: '20px', color: theme.lineNum, userSelect: 'none', flexShrink: 0, fontSize: '13px', fontFamily: 'monospace' }}>
+                {lineIdx + 1}
               </div>
-
-              {/* Code content */}
-              <div
-                style={{
-                  flex: 1,
-                  paddingRight: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  flexWrap: 'nowrap',
-                  overflow: 'visible',
-                }}
-              >
-                {isEmpty ? (
+              <div style={{ flex: 1, paddingRight: '24px', display: 'flex', alignItems: 'center', flexWrap: 'nowrap' }}>
+                {line === '' ? (
                   <span>&nbsp;</span>
                 ) : (
-                  segments.map((seg, i) => {
-                    if (seg.type === 'zone') {
-                      return <DropZone key={i} zoneId={seg.id} />;
-                    }
-                    return (
+                  segments.map((seg, i) =>
+                    seg.type === 'zone' ? (
+                      <DropZone key={i} zoneId={seg.id} />
+                    ) : (
                       <span key={i} style={{ whiteSpace: 'pre' }}>
                         <SyntaxText code={seg.content} />
                       </span>
-                    );
-                  })
+                    )
+                  )
                 )}
               </div>
             </div>
