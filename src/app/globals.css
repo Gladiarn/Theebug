@@ -1,0 +1,336 @@
+@import "tailwindcss";
+
+:root {
+  /* VS Code Dark+ (default) */
+  --bg: #1e1e1e;
+  --sidebar: #252526;
+  --panel: #252526;
+  --menu: #3c3c3c;
+  --bubble: #2d2d2d;
+  --border: #3a3a3a;
+  --border-light: #2a2a2a;
+  --text: #cccccc;
+  --text-muted: #888888;
+
+  --code-keyword: #569cd6;
+  --code-string: #ce9178;
+  --code-number: #b5cea8;
+  --code-function: #dcdcaa;
+  --code-variable: #9cdcfe;
+  --code-comment: #6a9955;
+  --code-plain: #cccccc;
+
+  --accent: #4ec9b0;
+  --accent-green: #6a9955;
+  --accent-red: #f48771;
+  --accent-blue: #0078d4;
+  --accent-yellow: #dcdcaa;
+
+  --drop-empty-bg: #2d2d2d;
+  --drop-empty-border: #4ec9b0;
+  --drop-correct-bg: #1e3a2a;
+  --drop-correct-border: #6a9955;
+  --drop-wrong-bg: #3a1e1a;
+  --drop-wrong-border: #f48771;
+  --drop-hover-bg: #2a3a4a;
+
+  --block-bg: #2d2d2d;
+  --block-border: #3e3e3e;
+  --block-hover-bg: #37373d;
+
+  --line-num: #4a4a5a;
+  --line-hover: #2a2d2e;
+
+  --nav-hover: #505050;
+  --sidebar-active: #37373d;
+  --badge-bg: #2d2d2d;
+  --success-hover: #2a5a3a;
+  --card-header: #2a2d2e;
+  --tag-bg: rgba(78, 201, 176, 0.12);
+  --icon-circle-bg: rgba(78, 201, 176, 0.15);
+  --section-alt: rgba(255, 255, 255, 0.02);
+
+  --shadow-elevated: 0 32px 80px rgba(0, 0, 0, 0.65);
+  --shadow-card-hover: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --shadow-block: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-block-hover: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+:root.light {
+  /* VS Code Light+ */
+  --bg: #ffffff;
+  --sidebar: #f3f3f3;
+  --panel: #f3f3f3;
+  --menu: #dddddd;
+  --bubble: #f8f8f8;
+  --border: #e4e4e4;
+  --border-light: #f0f0f0;
+  --text: #383838;
+  --text-muted: #6e6e6e;
+
+  --code-keyword: #0000ff;
+  --code-string: #a31515;
+  --code-number: #098658;
+  --code-function: #795e26;
+  --code-variable: #001080;
+  --code-comment: #008000;
+  --code-plain: #383838;
+
+  --accent: #007acc;
+  --accent-green: #388a34;
+  --accent-red: #d32f2f;
+  --accent-blue: #007acc;
+  --accent-yellow: #795e26;
+
+  --drop-empty-bg: #f0f6ff;
+  --drop-empty-border: #007acc;
+  --drop-correct-bg: #dff0d8;
+  --drop-correct-border: #5a9c5a;
+  --drop-wrong-bg: #faecec;
+  --drop-wrong-border: #d32f2f;
+  --drop-hover-bg: #e8f0fe;
+
+  --block-bg: #f5f5f5;
+  --block-border: #cccccc;
+  --block-hover-bg: #eaeaea;
+
+  --line-num: #aaaaaa;
+  --line-hover: #f8f8f8;
+
+  --nav-hover: #cccccc;
+  --sidebar-active: #e4e6f1;
+  --badge-bg: #f0f0f0;
+  --success-hover: #c8e6c9;
+  --card-header: #eaeaea;
+  --tag-bg: rgba(0, 122, 204, 0.08);
+  --icon-circle-bg: rgba(0, 122, 204, 0.1);
+  --section-alt: rgba(0, 0, 0, 0.02);
+
+  --shadow-elevated: 0 24px 60px rgba(0, 0, 0, 0.14);
+  --shadow-card-hover: 0 12px 32px rgba(0, 0, 0, 0.1);
+  --shadow-block: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --shadow-block-hover: 0 4px 10px rgba(0, 0, 0, 0.18);
+}
+
+/* Accent-tinted button shadow — references --accent directly, so it adapts
+   automatically per theme without needing its own light/dark duplicate. */
+:root {
+  --shadow-accent: 0 4px 16px color-mix(in srgb, var(--accent) 45%, transparent);
+  --shadow-accent-hover: 0 8px 24px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+@theme inline {
+  --font-mono: var(--font-jetbrains-mono), "Consolas", "Courier New", monospace;
+
+  --color-bg: var(--bg);
+  --color-sidebar: var(--sidebar);
+  --color-panel: var(--panel);
+  --color-menu: var(--menu);
+  --color-bubble: var(--bubble);
+  --color-border: var(--border);
+  --color-border-light: var(--border-light);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+
+  --color-code-keyword: var(--code-keyword);
+  --color-code-string: var(--code-string);
+  --color-code-number: var(--code-number);
+  --color-code-function: var(--code-function);
+  --color-code-variable: var(--code-variable);
+  --color-code-comment: var(--code-comment);
+  --color-code-plain: var(--code-plain);
+
+  --color-accent: var(--accent);
+  --color-accent-green: var(--accent-green);
+  --color-accent-red: var(--accent-red);
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-yellow: var(--accent-yellow);
+
+  --color-drop-empty-bg: var(--drop-empty-bg);
+  --color-drop-empty-border: var(--drop-empty-border);
+  --color-drop-correct-bg: var(--drop-correct-bg);
+  --color-drop-correct-border: var(--drop-correct-border);
+  --color-drop-wrong-bg: var(--drop-wrong-bg);
+  --color-drop-wrong-border: var(--drop-wrong-border);
+  --color-drop-hover-bg: var(--drop-hover-bg);
+
+  --color-block-bg: var(--block-bg);
+  --color-block-border: var(--block-border);
+  --color-block-hover-bg: var(--block-hover-bg);
+
+  --color-line-num: var(--line-num);
+  --color-line-hover: var(--line-hover);
+
+  --color-nav-hover: var(--nav-hover);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-badge-bg: var(--badge-bg);
+  --color-success-hover: var(--success-hover);
+  --color-card-header: var(--card-header);
+  --color-tag-bg: var(--tag-bg);
+  --color-icon-circle-bg: var(--icon-circle-bg);
+  --color-section-alt: var(--section-alt);
+}
+
+@keyframes worm-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(5deg);
+  }
+}
+@keyframes worm-wiggle {
+  0% {
+    transform: rotate(-18deg) scale(1.15);
+  }
+  100% {
+    transform: rotate(18deg) scale(1.15);
+  }
+}
+@keyframes worm-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes worm-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  75% {
+    transform: translateX(6px);
+  }
+}
+
+.hero-worm {
+  animation: worm-float 3.2s ease-in-out infinite;
+  display: inline-block;
+}
+.worm-happy {
+  animation: worm-bounce 0.5s ease-in-out 2;
+}
+.worm-sad {
+  animation: worm-shake 0.4s ease-in-out 2;
+}
+.worm-celebrating {
+  animation: worm-wiggle 0.45s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 8px var(--accent));
+}
+
+@keyframes drift-a {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(2deg);
+  }
+}
+@keyframes drift-b {
+  0%,
+  100% {
+    transform: translateY(0) rotate(2deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(-3deg);
+  }
+}
+@keyframes drift-c {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-18px) rotate(1deg);
+  }
+}
+.float-1 {
+  animation: drift-a 8s ease-in-out infinite;
+}
+.float-2 {
+  animation: drift-b 10s ease-in-out infinite 1.2s;
+}
+.float-3 {
+  animation: drift-c 9s ease-in-out infinite 2.4s;
+}
+.float-4 {
+  animation: drift-a 11s ease-in-out infinite 0.6s;
+}
+.float-5 {
+  animation: drift-b 7.5s ease-in-out infinite 3s;
+}
+.float-6 {
+  animation: drift-c 12s ease-in-out infinite 1.8s;
+}
+
+/* Shared display-headline voice: JetBrains Mono set large and bold reads as
+   distinctive precisely because mono is normally reserved for code, not
+   headlines — leaning into "everything here is code" rather than reaching
+   for a second typeface. */
+.text-display {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+@keyframes caret-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.caret {
+  animation: caret-blink 1s step-end infinite;
+}
+
+@keyframes chip-drop {
+  0% {
+    transform: translateY(-16px);
+    opacity: 0;
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+}
+.chip-drop {
+  animation: chip-drop 0.65s ease-in forwards;
+}
+@keyframes diff-flash {
+  0% {
+    background-color: color-mix(in srgb, var(--drop-correct-bg) 40%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.diff-flash {
+  animation: diff-flash 0.8s ease-out;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+#__next {
+  height: 100%;
+}
+body {
+  font-family: var(--font-mono);
+}
