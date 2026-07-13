@@ -30,6 +30,12 @@ const MOOD_TRIANGLE_VAR: Record<WormMood, string> = {
   celebrating: "var(--accent-green)",
 };
 
+function formatElapsed(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 function WormCharacter({ mood }: { mood: WormMood }) {
   return (
     <div className={`inline-block origin-bottom text-[52px] leading-none ${MOOD_ANIM[mood]}`}>
@@ -39,8 +45,18 @@ function WormCharacter({ mood }: { mood: WormMood }) {
 }
 
 export function RightPanel() {
-  const { currentTrack, currentLevelIndex, currentLevel: level, wormMood, wormMessage, score, levelComplete, nextLevel, zoneFills } =
-    useGame();
+  const {
+    currentTrack,
+    currentLevelIndex,
+    currentLevel: level,
+    wormMood,
+    wormMessage,
+    score,
+    levelComplete,
+    nextLevel,
+    zoneFills,
+    elapsedSeconds,
+  } = useGame();
   const isLastLevel = currentLevelIndex === currentTrack.levels.length - 1;
   const correctCount = level.zones.filter((z) => zoneFills[z.id]?.correct === true).length;
 
@@ -48,7 +64,10 @@ export function RightPanel() {
     <div className="flex w-[265px] shrink-0 flex-col overflow-hidden border-l border-border bg-panel text-[13px] text-text transition-colors duration-200">
       <div className="flex items-center justify-between border-b border-border px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-text-muted">
         <span>Game Panel</span>
-        <span className="font-mono text-xs normal-case tracking-normal text-accent">{score} pts</span>
+        <div className="flex items-center gap-2 normal-case tracking-normal">
+          <span className="font-mono text-xs text-text-muted">{formatElapsed(elapsedSeconds)}</span>
+          <span className="font-mono text-xs text-accent">{score} pts</span>
+        </div>
       </div>
 
       <div className="border-b border-border px-3 py-2.5">

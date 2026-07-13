@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   getAllProgress,
   getTrackProgress,
@@ -31,6 +31,8 @@ interface GameContextValue {
   wormMessage: string;
   terminalLogs: string[];
   levelComplete: boolean;
+  mistakes: number;
+  elapsedSeconds: number;
   dropBlock: (zoneId: string, code: string) => void;
   nextLevel: () => void;
   resetLevel: () => void;
@@ -67,8 +69,11 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
   const [completedLevels, setCompletedLevels] = useState<number[]>([]);
   const [wormMood, setWormMood] = useState<WormMood>("neutral");
   const [wormMessage, setWormMessage] = useState(currentLevel.wormIntro);
-  const [terminalLogs, setTerminalLogs] = useState<string[]>(["[system] Code Canvas ready. Happy coding!"]);
+  const [terminalLogs, setTerminalLogs] = useState<string[]>(["[system] Theebug ready. Happy coding!"]);
   const [levelComplete, setLevelComplete] = useState(false);
+  const [mistakes, setMistakes] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const levelStartRef = useRef<number | null>(null);
 
   const addLog = useCallback((msg: string) => {
     setTerminalLogs((prev) => [...prev.slice(-30), msg]);
@@ -86,8 +91,26 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
     setWormMood("neutral");
     setWormMessage(currentLevel.wormIntro);
     setLevelComplete(completedLevels.includes(currentLevel.id));
+    setMistakes(0);
+    setElapsedSeconds(0);
     addLog(`[system] Level ${currentLevelIndex + 1}: ${currentLevel.title}`);
   }
+
+  // Per-level stopwatch. Refs/Date.now() can't be touched during render (React purity rules),
+  // so the start-time reset happens in its own effect, ordered before the ticking effect below
+  // so the interval always reads a freshly-reset start time on the same commit a level changes.
+  useEffect(() => {
+    levelStartRef.current = Date.now();
+  }, [levelKey]);
+
+  useEffect(() => {
+    if (levelComplete || levelStartRef.current === null) return;
+    const start = levelStartRef.current;
+    const interval = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [levelKey, levelComplete]);
 
   // Hydrate saved progress for this track — from the server if signed in, otherwise from
   // localStorage. Done in an effect (not a useState initializer) since neither localStorage nor
@@ -172,7 +195,8 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
       addLog(`[drop] "${code}" → ${zoneId} ${correct ? "✓" : "✗"}`);
 
       if (allCorrect) {
-        const nextScore = score + 100;
+        const levelScore = Math.max(40, 100 - mistakes * 10);
+        const nextScore = score + levelScore;
         const nextCompleted = completedLevels.includes(currentLevel.id)
           ? completedLevels
           : [...completedLevels, currentLevel.id];
@@ -181,7 +205,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         setWormMessage(currentLevel.wormCorrectAll);
         setLevelComplete(true);
         setScore(nextScore);
-        addLog(`[system] Level ${currentLevel.id} complete! +100 points`);
+        addLog(`[system] Level ${currentLevel.id} complete! +${levelScore} points`);
         setCompletedLevels(nextCompleted);
         const progress: TrackProgress = {
           completedLevels: nextCompleted,
@@ -203,6 +227,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         setWormMessage("Nice drop! That one's correct! Keep going! 🎯");
         setTimeout(() => setWormMood("neutral"), 1500);
       } else {
+        setMistakes((m) => m + 1);
         setWormMood("sad");
         setWormMessage("Hmm, that's not quite right. Try a different block! 🤔");
         setTimeout(() => {
@@ -211,7 +236,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         }, 2200);
       }
     },
-    [currentLevel, currentLevelIndex, zoneFills, score, completedLevels, track, addLog, isSignedIn],
+    [currentLevel, currentLevelIndex, zoneFills, score, completedLevels, track, addLog, isSignedIn, mistakes],
   );
 
   const nextLevel = useCallback(() => {
@@ -226,6 +251,9 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
     setWormMood("neutral");
     setWormMessage(currentLevel.wormIntro);
     setLevelComplete(false);
+    setMistakes(0);
+    setElapsedSeconds(0);
+    levelStartRef.current = Date.now();
     addLog("[system] Level reset.");
   }, [currentLevel, addLog]);
 
@@ -250,6 +278,8 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         wormMessage,
         terminalLogs,
         levelComplete,
+        mistakes,
+        elapsedSeconds,
         dropBlock,
         nextLevel,
         resetLevel,

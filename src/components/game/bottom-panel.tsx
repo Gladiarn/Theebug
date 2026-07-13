@@ -4,7 +4,7 @@ import { useGame } from "@/lib/game-context";
 import { DraggableBlock } from "./draggable-block";
 
 export function BottomPanel() {
-  const { currentLevel: level } = useGame();
+  const { currentLevel: level, mistakes } = useGame();
 
   return (
     <div className="shrink-0 border-t border-border bg-panel transition-colors duration-200">
@@ -15,6 +15,11 @@ export function BottomPanel() {
           Drag blocks into the drop zones above
         </span>
         <div className="flex-1" />
+        {mistakes > 0 && (
+          <span className="text-[11px] text-accent-red">
+            {mistakes} mistake{mistakes === 1 ? "" : "s"}
+          </span>
+        )}
         <span className="text-[11px] text-text-muted">{level.blocks.length} blocks available</span>
       </div>
 

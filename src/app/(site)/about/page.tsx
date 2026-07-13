@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "About",
-  description: "Why Code Canvas exists and how it teaches by doing.",
+  description: "Why Theebug exists and how it teaches by doing.",
 };
 
 export default function AboutPage() {
@@ -12,12 +12,12 @@ export default function AboutPage() {
         <div className="mb-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-accent">
           {"// about"}
         </div>
-        <h1 className="text-display m-0 text-[clamp(28px,4vw,44px)] text-text">Why Code Canvas exists</h1>
+        <h1 className="text-display m-0 text-[clamp(28px,4vw,44px)] text-text">Why Theebug exists</h1>
       </div>
       <div className="flex flex-col gap-6 text-sm leading-relaxed text-text-muted">
         <p>
           Most coding tutorials teach by reading, then ask you to write code on a blank page — the single
-          biggest place beginners freeze up. Code Canvas flips that: every level is real, working code with a
+          biggest place beginners freeze up. Theebug flips that: every level is real, working code with a
           few pieces missing, and your job is to drag the right piece into place.
         </p>
         <p>

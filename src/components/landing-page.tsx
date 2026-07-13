@@ -88,8 +88,8 @@ export function LandingPage() {
             </h1>
 
             <p className="mb-8 max-w-[460px] text-[15px] leading-relaxed text-text-muted">
-              Real JavaScript, HTML, and CSS with a few pieces missing. Drag the right block into
-              place and watch it resolve — Debug the Worm coaches every drop.
+              Real JavaScript, Python, HTML, and CSS with a few pieces missing. Drag the right
+              block into place and watch it resolve — Debug the Worm coaches every drop.
             </p>
 
             <div className="flex flex-wrap gap-3">
@@ -261,7 +261,7 @@ export function LandingPage() {
             className="inline-flex items-center gap-2 rounded-md border-none bg-accent px-11 py-[15px] font-sans text-base font-bold text-white shadow-[var(--shadow-accent)] outline-none transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-accent-hover)]"
           >
             <Play className="h-4 w-4" fill="currentColor" />
-            Launch Code Canvas
+            Launch Theebug
           </button>
         </div>
       </section>

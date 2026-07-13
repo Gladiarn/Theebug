@@ -20,7 +20,7 @@ export function SiteTabBar() {
         <div className="flex-1" />
       </div>
       <div className="flex shrink-0 items-center gap-1 border-b border-border-light bg-bg px-4 py-[3px] text-xs text-text-muted">
-        <span>CODE_CANVAS</span>
+        <span>THEEBUG</span>
         <span>›</span>
         <span className="text-text">{page.filename}</span>
       </div>

@@ -8,7 +8,7 @@ import { TRACKS } from "@/lib/tracks";
 
 export const metadata: Metadata = {
   title: "Account",
-  description: "Your Code Canvas profile and progress.",
+  description: "Your Theebug profile and progress.",
 };
 
 export default async function AccountPage() {
