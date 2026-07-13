@@ -4,7 +4,7 @@ import { FAQ } from "@/lib/faq-data";
 
 export const metadata: Metadata = {
   title: "FAQ",
-  description: "Frequently asked questions about Code Canvas.",
+  description: "Frequently asked questions about Theebug.",
 };
 
 export default function FaqPage() {

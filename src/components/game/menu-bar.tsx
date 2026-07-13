@@ -39,7 +39,7 @@ export function MenuBar() {
       <span className="inline-flex h-[30px] cursor-default items-center px-2.5 text-xs opacity-50">Help</span>
 
       <div className="flex-1 pointer-events-none text-center text-xs text-text-muted">
-        Code Canvas — Learn {currentTrack.title} by Doing
+        Theebug — Learn {currentTrack.title} by Doing
       </div>
 
       <button

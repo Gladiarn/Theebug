@@ -22,7 +22,7 @@ export function SiteSidebar({ open, onNavigate }: { open: boolean; onNavigate: (
       <div className="flex-1 overflow-y-auto py-1">
         <div className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-text-muted">
           <span className="text-[9px]">▼</span>
-          <span>CODE_CANVAS</span>
+          <span>THEEBUG</span>
         </div>
 
         {SITE_PAGES.map((page) => {

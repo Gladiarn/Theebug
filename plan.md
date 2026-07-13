@@ -1,9 +1,10 @@
-# Code Canvas — Project Plan
+# Theebug — Project Plan
 
-A VS Code–styled drag-and-drop coding game that teaches JavaScript, HTML, and CSS by having
-learners drag the right code block into blanks in real code, coached by a mascot ("Debug the
-Worm"). Originally a Figma Make export; rebuilt into a real Next.js app and grown into a small
-multi-page platform.
+A VS Code–styled drag-and-drop coding game that teaches JavaScript, Python, HTML, and CSS by
+having learners drag the right code block into blanks in real code, coached by a mascot
+("Debug the Worm"). Originally a Figma Make export (then called "Code Canvas," renamed to
+match the repo); rebuilt into a real Next.js app and grown into a small multi-page platform
+with accounts, a leaderboard, and a growing course catalog.
 
 ## Stack
 
@@ -14,9 +15,13 @@ multi-page platform.
 - `@react-three/fiber` + `three` — the 3D "Debug" creature on the landing page
   (`@react-three/drei` is installed but currently unused — safe to remove, or keep for future
   3D work)
-- `lucide-react` — the only icon system in use (no emoji anywhere on site pages by design)
-- No backend, no database, no auth. Progress persists client-side only, via
-  `src/lib/progress-store.ts` (localStorage, keyed per track).
+- `lucide-react` — general site icons (no emoji anywhere on site pages by design)
+- `react-icons/si` (Simple Icons) — real per-language brand logos for track icons
+  (`SiJavascript`, `SiPython`, `SiHtml5`, `SiCss`), used instead of generic lucide shapes so new
+  language/framework tracks (C#, PHP, React, ...) get authentic logos too
+- Auth.js v5 (`next-auth@beta`) + MongoDB Atlas (free M0 tier) — see "Accounts + database"
+  below. Progress persists to the DB when signed in, to `localStorage` (`src/lib/progress-store.ts`)
+  when anonymous.
 
 ## Architecture
 
@@ -37,18 +42,36 @@ Two visually-related but separate "zones," both dressed as the same IDE:
   - `SiteStatusBar` — bottom bar, accent-blue, VS Code status-bar homage
 
 Content/data lives under `src/lib/`:
-- `tracks/` — `javascript.ts`, `html.ts`, `css.ts`, each a `Track` with ordered `Level`s
-  (codeLines with `{{zoneN}}` placeholders, `zones` answer key, `blocks` including distractors)
-- `reference/` — cheatsheet content for `/docs/[track]`
+- `tracks/` — `javascript.ts`, `python.ts`, `html.ts`, `css.ts`, each a `Track` with ordered
+  `Level`s (codeLines with `{{zoneN}}` placeholders, `zones` answer key, `blocks` including
+  distractors). Adding a track is mostly additive: new file + one line in `tracks/index.ts`'s
+  `TRACKS` array + one line in `reference/index.ts` + an icon entry in `track-icon.tsx` — see
+  "Content depth + more tracks" below for the couple of hardcoded-prose spots that also need a
+  one-line update.
+- `reference/` — cheatsheet content for `/docs/[track]`. JavaScript's is deep/professional
+  (12 sections); Python/HTML/CSS are still baseline depth (short body + one example per
+  section) — same `ReferenceSection` type, just less content authored so far.
 - `faq-data.ts`, `site-pages.ts` (the sidebar/tab-bar page registry)
 
 ## Design system rules (don't break these without deciding to on purpose)
 
-- **Palette**: VS Code Dark+ / Light+ exactly, via CSS custom properties in `globals.css`,
-  toggled by a `.light` class on the theme wrapper (`src/lib/theme-context.tsx`). This *is* the
-  brand — not a generic dark mode.
+- **Palette**: VS Code Dark+ / Light+ exactly, via CSS custom properties in `globals.css`
+  (`:root` = dark, `:root.light` = light — both fully defined, single source of truth: change
+  one CSS var and every themed surface updates). This *is* the brand — not a generic dark mode.
+  The `.light` class is applied to `document.documentElement` — not a wrapper `<div>` — since
+  `:root` in CSS only ever matches the actual document root; a blocking inline script in
+  `src/app/layout.tsx` sets it before first paint (reading `THEME_STORAGE_KEY` from
+  `src/lib/theme-constants.ts`) to avoid a flash of the wrong theme, and `theme-context.tsx`'s
+  `toggleTheme` keeps the class, React state, and `localStorage` in sync. (Note:
+  `THEME_STORAGE_KEY` deliberately lives in its own plain file, not in the `"use client"`
+  `theme-context.tsx` — importing a plain constant from a client-directive file into a Server
+  Component resolved as `undefined` at runtime, a real bug hit once already.)
 - **Type**: JetBrains Mono only (weights 400/500/700), used for both display headlines and body
   copy — deliberate, not an oversight. `.text-display` utility class = bold + tight tracking.
+  Ligatures are force-disabled site-wide (`font-variant-ligatures: none` +
+  `font-feature-settings: "liga" 0, "calt" 0` on `body`) — JetBrains Mono otherwise merges
+  sequences like `>=`, `<=`, `!=`, `===` into single glyphs, which is actively misleading in a
+  tool teaching people what characters to actually type.
 - **No emoji on site pages.** Icons are `lucide-react` only. (The in-game mood system —
   `RightPanel`'s worm faces, `Terminal`'s ✓/✗ — is out of scope for this rule; that's core game
   feedback, not decoration.)
@@ -69,12 +92,13 @@ Content/data lives under `src/lib/`:
 
 ## Known placeholders / TODO
 
-- `SiteTopBar`'s GitHub icon links to `#` — needs the real repo URL (and optionally Twitter/X or
-  Discord alongside it, if those accounts exist).
 - `@react-three/drei` is an unused dependency — remove next time deps are touched.
-- HTML track has 5 levels, CSS has 6, JS has 5 — fine as a starter set, room to grow.
-- GitHub OAuth App credentials (`AUTH_GITHUB_ID`/`AUTH_GITHUB_SECRET`) still need to be added to
-  `.env.local` — sign-in is wired up but won't complete without them. See `.env.example`.
+- HTML track has 5 levels, CSS has 6, JS/Python have 5 each — fine as a starter set, room to grow.
+- Python/HTML/CSS docs are still baseline depth — only JavaScript has gotten the full
+  professional rewrite so far (see "Content depth + more tracks" below). Apply the same bar to
+  the others when there's time.
+- C#, PHP, and framework tracks (React, ...) are planned but not started — Python was built
+  first to establish the content-quality bar.
 
 ## Accounts + database (built)
 
@@ -103,6 +127,33 @@ tradeoff already accepted for localStorage hydration elsewhere in this app). `/a
 be live) — everything else stays statically generated.
 
 Full original design doc (decision log, build order): `~/.claude/plans/snoopy-dreaming-brooks.md`.
+
+## Content depth, light mode, and harder gameplay (Phase 7, built)
+
+- **Light mode actually works now.** It was fully dead before this — the CSS was complete but
+  the toggle applied `.light` to the wrong element (see the theme bullet under "Design system
+  rules" above for the fix).
+- **Gameplay difficulty**: `src/lib/game-context.tsx` now tracks `mistakes` (increments on a
+  wrong drop, resets per level) and `elapsedSeconds` (a per-level stopwatch, freezes on
+  completion). Score per level is `Math.max(40, 100 - mistakes * 10)` instead of a flat 100 —
+  intentionally ephemeral/per-attempt, not persisted as historical stats, so none of the
+  progress-sync plumbing needed to change. Displayed in `right-panel.tsx` (timer, next to score)
+  and `bottom-panel.tsx` (mistake count, in a previously-empty header spacer) — no layout
+  redesign, just filled existing chrome.
+- **Python track added** (`src/lib/tracks/python.ts`, `src/lib/reference/python.ts`) — same
+  5-level topic progression as JavaScript (variables, functions, list-length, list
+  comprehensions, conditionals) for a consistent difficulty curve across tracks.
+- **JavaScript docs rewritten to real depth**: `ReferenceSection` grew from
+  `{ body: string; codeExample?: string }` to `{ body: string[]; examples?: ReferenceExample[];
+  tip?: string }` — multiple paragraphs, multiple labeled examples, and an optional callout per
+  section. JavaScript now has 12 sections with real explanatory depth; HTML/CSS/Python were
+  mechanically migrated to the new shape but not content-expanded yet (see TODO above).
+- **Renamed "Code Canvas" → "Theebug"** site-wide (titles, metadata, footer, headers, FAQ,
+  README) to match the actual repo/project name. Internal `localStorage` keys
+  (`codecanvas:progress:v1` etc.) were deliberately left as-is — renaming them would silently
+  drop existing users' saved progress for a purely cosmetic gain.
+- **GitHub link wired up**: `SiteTopBar`'s GitHub icon now points to
+  https://github.com/Gladiarn instead of the `#` placeholder.
 
 ## Design iteration history (so we don't redo the same loop)
 

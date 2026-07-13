@@ -4,7 +4,7 @@ import { TRACKS } from "@/lib/tracks";
 
 export const metadata: Metadata = {
   title: "Learn",
-  description: "Browse every Code Canvas course: JavaScript, HTML, CSS, and more.",
+  description: "Browse every Theebug course: JavaScript, Python, HTML, CSS, and more.",
 };
 
 export default function LearnPage() {

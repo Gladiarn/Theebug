@@ -5,7 +5,7 @@ import { getLeaderboard } from "@/lib/progress-db";
 
 export const metadata: Metadata = {
   title: "Leaderboard",
-  description: "Top learners on Code Canvas, ranked by score.",
+  description: "Top learners on Theebug, ranked by score.",
 };
 
 // Ranks change as people play — must be queried fresh on every request, not baked in at build time.

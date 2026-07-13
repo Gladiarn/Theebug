@@ -27,7 +27,7 @@ export function EditorArea() {
     <div className="flex flex-1 flex-col overflow-hidden bg-bg transition-colors duration-200">
       <div className="flex h-[35px] shrink-0 items-center border-b border-border bg-sidebar">
         <div className="flex h-full items-center gap-2 border-r border-border border-t-2 border-t-accent-blue bg-bg px-4 text-[13px]">
-          <span className="text-xs font-bold" style={{ color: "#e8bf6a" }}>{fileBadge(level.filename)}</span>
+          <span className="text-xs font-bold text-accent-yellow">{fileBadge(level.filename)}</span>
           <span>{level.filename}</span>
           <span className="cursor-pointer px-[3px] text-sm text-text-muted">×</span>
         </div>
@@ -35,7 +35,7 @@ export function EditorArea() {
       </div>
 
       <div className="flex shrink-0 items-center gap-1 border-b border-border-light bg-bg px-4 py-[3px] text-xs text-text-muted">
-        <span>CODE_CANVAS</span>
+        <span>THEEBUG</span>
         <span>›</span>
         <span className="text-text">{level.filename}</span>
       </div>

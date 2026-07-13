@@ -5,7 +5,7 @@ import { TRACKS } from "@/lib/tracks";
 
 export const metadata: Metadata = {
   title: "Docs",
-  description: "Quick reference cheatsheets for every Code Canvas course.",
+  description: "Quick reference cheatsheets for every Theebug course.",
 };
 
 export default function DocsPage() {

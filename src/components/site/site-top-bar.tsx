@@ -20,15 +20,17 @@ export function SiteTopBar({ onMenuClick }: { onMenuClick: () => void }) {
 
       <Link href="/" className="flex items-center gap-1.5 font-mono text-xs font-bold text-text">
         <Bug className="h-4 w-4 text-accent" strokeWidth={1.75} />
-        <span className="hidden sm:inline">Code Canvas</span>
+        <span className="hidden sm:inline">Theebug</span>
       </Link>
 
       <div className="pointer-events-none flex-1 text-center text-xs text-text-muted">
-        Code Canvas — Learn to Code by Doing
+        Theebug — Learn to Code by Doing
       </div>
 
       <a
-        href="#"
+        href="https://github.com/Gladiarn"
+        target="_blank"
+        rel="noopener noreferrer"
         title="View on GitHub"
         className="flex items-center justify-center rounded border border-border p-1.5 text-text-muted outline-none transition-colors hover:border-accent hover:text-text"
       >

@@ -333,4 +333,9 @@ body {
 }
 body {
   font-family: var(--font-mono);
+  /* JetBrains Mono merges sequences like >=, <=, !=, === into single ligature
+     glyphs by default — actively misleading in a tool teaching people what
+     characters to type. Force literal character rendering everywhere. */
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
 }

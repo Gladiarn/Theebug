@@ -36,7 +36,7 @@ export function SiteFooter() {
             <div className="pl-4">
               <span className="text-code-string">&quot;product&quot;</span>
               <span className="text-code-plain">: </span>
-              <span className="text-code-string">&quot;Code Canvas&quot;</span>
+              <span className="text-code-string">&quot;Theebug&quot;</span>
               <span className="text-code-plain">,</span>
             </div>
 
@@ -60,6 +60,47 @@ export function SiteFooter() {
               <span className="text-code-string">&quot;stack&quot;</span>
               <span className="text-code-plain">: </span>
               <span className="text-code-string">&quot;React + react-dnd, VS Code Dark+/Light+&quot;</span>
+              <span className="text-code-plain">,</span>
+            </div>
+
+            <div className="pl-4">
+              <span className="text-code-string">&quot;author&quot;</span>
+              <span className="text-code-plain">: {"{"}</span>
+            </div>
+            <div className="pl-8">
+              <span className="text-code-string">&quot;name&quot;</span>
+              <span className="text-code-plain">: </span>
+              <span className="text-code-string">&quot;Gladiarn&quot;</span>
+              <span className="text-code-plain">,</span>
+            </div>
+            <div className="pl-8">
+              <span className="text-code-string">&quot;email&quot;</span>
+              <span className="text-code-plain">: </span>
+              <a href="mailto:bulilaniannecarl@gmail.com" className="text-accent hover:underline">
+                &quot;bulilaniannecarl@gmail.com&quot;
+              </a>
+              <span className="text-code-plain">,</span>
+            </div>
+            <div className="pl-8">
+              <span className="text-code-string">&quot;github&quot;</span>
+              <span className="text-code-plain">: </span>
+              <a
+                href="https://github.com/Gladiarn"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >
+                &quot;github.com/Gladiarn&quot;
+              </a>
+            </div>
+            <div className="pl-4">
+              <span className="text-code-plain">{"},"}</span>
+            </div>
+
+            <div className="pl-4">
+              <span className="text-code-string">&quot;motto&quot;</span>
+              <span className="text-code-plain">: </span>
+              <span className="text-code-string">&quot;Break it. Debug it. Own it.&quot;</span>
             </div>
             <div>
               <span className="text-code-plain">{"}"}</span>

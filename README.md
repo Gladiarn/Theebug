@@ -1,6 +1,6 @@
-# Code Canvas
+# Theebug
 
-A VS Code–styled drag-and-drop game for learning JavaScript, built with Next.js.
+A VS Code–styled drag-and-drop game for learning to code, built with Next.js.
 
 ## Running the code
 

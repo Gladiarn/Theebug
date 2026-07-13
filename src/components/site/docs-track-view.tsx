@@ -1,5 +1,6 @@
 "use client";
 
+import { Lightbulb } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { TrackReference } from "@/lib/reference";
@@ -91,11 +92,36 @@ export function DocsTrackView({ track, reference }: { track: Track; reference: T
                 {section.title}
                 <span className="text-code-comment">{" */"}</span>
               </h2>
-              <p className="mb-3 text-sm leading-relaxed text-text-muted">{section.body}</p>
-              {section.codeExample && (
-                <pre className="overflow-x-auto rounded border border-border bg-bg p-3 font-mono text-xs text-code-plain">
-                  <code>{section.codeExample}</code>
-                </pre>
+              <div className="flex flex-col gap-3 text-sm leading-relaxed text-text-muted">
+                {section.body.map((paragraph, i) => (
+                  <p key={i} className="m-0">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+
+              {section.examples && section.examples.length > 0 && (
+                <div className="mt-3 flex flex-col gap-3">
+                  {section.examples.map((example, i) => (
+                    <div key={i}>
+                      {example.title && (
+                        <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-text-muted">
+                          {example.title}
+                        </div>
+                      )}
+                      <pre className="overflow-x-auto rounded border border-border bg-bg p-3 font-mono text-xs text-code-plain">
+                        <code>{example.code}</code>
+                      </pre>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {section.tip && (
+                <div className="mt-3 flex items-start gap-2 rounded border border-accent/30 bg-icon-circle-bg px-3 py-2.5 text-xs leading-relaxed text-text">
+                  <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+                  <span>{section.tip}</span>
+                </div>
               )}
             </section>
           ))}
