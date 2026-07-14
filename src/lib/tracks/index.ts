@@ -4,7 +4,7 @@ import { javascriptTrack } from "./javascript";
 import { pythonTrack } from "./python";
 import type { Track } from "./types";
 
-export type { Block, Level, Track, ZoneDef } from "./types";
+export type { Block, Difficulty, Level, Track, ZoneDef } from "./types";
 
 export const TRACKS: Track[] = [javascriptTrack, pythonTrack, htmlTrack, cssTrack];
 

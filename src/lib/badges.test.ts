@@ -13,6 +13,7 @@ function track(id: string, levelCount: number): Track {
       id: i + 1,
       title: `Level ${i + 1}`,
       filename: `l${i + 1}.js`,
+      difficulty: "easy" as const,
       objective: "",
       preview: [],
       codeLines: [],

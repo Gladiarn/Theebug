@@ -129,6 +129,14 @@ re-prioritized without losing the "why":
   real perf problem once already — avoid `backdrop-filter` over the hero.
 - **CTA buttons** use `bg-accent` + white text + `shadow-[var(--shadow-accent)]` (a
   `color-mix()` formula that tracks `--accent` automatically) — not a separately hardcoded blue.
+- **Scrollbars** are custom-styled site-wide (`globals.css`, applied to `*` so it's automatic
+  everywhere, no per-component opt-in needed): thin, VS Code-like — subtle `--border`-colored
+  thumb at rest, brightens to `--text-muted` on hover, `--accent` while actively dragging.
+  Standards-based `scrollbar-width`/`scrollbar-color` (Firefox) plus `::-webkit-scrollbar`
+  pseudo-elements (Chromium/Safari) covering both engines; themed via the same CSS vars as
+  everything else, so light/dark just works with no separate scrollbar rule per theme —
+  verified both resolve correctly (`--border` is `#3a3a3a` dark / `#e4e4e4` light, confirmed via
+  computed-style checks in both themes).
 - **Standing principle for all future UI work** (explicit user instruction, not a one-off): the
   user loves the current landing page and overall design — new UI must stay visually consistent
   with it, not introduce a new visual language. Concretely: reuse the existing CSS-variable
@@ -549,6 +557,73 @@ rate limiting (already designed above) → error tracking → SEO files → anal
 policy → testing → accessibility → backups/uptime**, front-loading the highest-risk/lowest-effort
 items first.
 
+## Performance audit
+
+Measured, not guessed: built the app for production (`next build` + `next start`) and used a
+real Playwright network audit (every JS/CSS response's actual byte size, not dev-server
+estimates — Turbopack's dev bundles are unminified and split completely differently, so a dev
+audit would have been misleading) across `/`, `/play/[track]/[level]`, `/docs/[track]`, and
+`/leaderboard`.
+
+**Found and fixed — the dominant issue, a classic Next.js gotcha.** Every single page was
+shipping **~1.5-1.7MB of JS**, and 877KB of that (roughly half) was `three.js` +
+`@react-three/fiber` — used by exactly one component, `DebugWormScene`, which only ever renders
+in one place: the landing page's hero. `landing-page.tsx` imported it with a plain top-level
+`import`, which is the trap: Next.js's automatic per-route code-splitting doesn't reliably keep
+a heavy dependency out of the shared/vendor bundle just because only one page happens to use it
+— without an explicit code-split boundary, bundlers commonly fold "big enough" dependencies into
+a common chunk loaded on every route regardless. Confirmed precisely via `grep`ing the actual
+chunk file for `TubeGeometry`/`CatmullRomCurve3`/`WebGLRenderer` (`DebugWormScene`'s own symbols)
+and finding that exact chunk requested on `/play/*`, `/docs/*`, and `/leaderboard` too, despite
+the 3D scene never rendering on any of them.
+
+**Fix**: `landing-page.tsx` now imports `DebugWormScene` via `next/dynamic(..., { ssr: false })`
+instead of a plain `import`, forcing Turbopack to actually treat it as a separate, lazily-fetched
+chunk. `ssr: false` is correct here regardless of the bundle-size issue — it's a WebGL canvas,
+there's nothing meaningful to server-render. Re-measured after the fix:
+
+| Route | Before | After |
+|---|---|---|
+| `/` | 1567KB | 642KB |
+| `/play/javascript/1` | 1673KB | 702KB |
+| `/docs/javascript` | 1603KB | 678KB |
+| `/leaderboard` | 1567KB | 636KB |
+
+Roughly **1MB removed from every route except the homepage**, and even the homepage itself
+dropped, since the 3D scene now loads lazily instead of blocking on the initial bundle. Verified
+the 3D worm still renders correctly post-fix (canvas present, tube geometry visible, screenshotted)
+— this was a pure bundling fix, no visual/behavioral change.
+
+**Checked and ruled out as non-issues**: no `backdrop-blur`/`backdrop-filter` usage anywhere in
+`src` (the one earlier instance, the reward modal's overlay, was already removed — see Phase 8's
+history); the one `<img>`-looking match outside `next/image` is a string literal inside
+`live-diff-hero.tsx`'s example-code mockup data, never actually rendered as an image element;
+the next-largest chunk (227KB, present on every route as expected) is React/ReactDOM itself —
+normal, unavoidable framework baseline, not app-specific bloat worth chasing.
+
+**Found, understood, deliberately not fixed this pass — a real architectural cost, not a quick
+fix.** `game-context.tsx`'s `GameContext.Provider` passes one large inline object literal
+(`zoneFills`, `score`, `completedLevels`, `wormMood`, `wormMessage`, `terminalLogs`,
+`levelComplete`, `mistakes`, `elapsedSeconds`, `justCompleted`, `lastLevelPoints`, plus every
+action function) as its `value`, consumed by **9 different components**
+(`MenuBar`, `Terminal`, `DropZone`, `Sidebar`, `LevelCompleteModal`, `SignInNudge`,
+`EditorArea`, `RightPanel`, `BottomPanel`). Because it's a new object literal on every render
+and nothing is memoized, **every one of those 9 consumers re-renders on every state change** —
+including the once-per-second `elapsedSeconds` tick, meaning the entire game UI tree re-renders
+every second during active play, whether or not a given component displays the timer.
+`useMemo`-wrapping the value object would **not** actually fix this, since `elapsedSeconds`
+would still need to be a dependency and still changes every second — the real fix is
+structural: splitting the frequently-changing, display-only fields (`elapsedSeconds`, and
+likely `terminalLogs`) into their own narrower context(s) that only their actual consumers
+(`RightPanel` for the timer, `Terminal` for logs, `LevelCompleteModal` needing the *final*
+elapsed value at completion) subscribe to. Not fixed this pass because: (1) it's a real
+refactor of the most heavily-used file in the app, not a quick change, and deserves dedicated
+testing bandwidth rather than being squeezed into a "check performance" pass; (2) without a
+profiling trace showing actual dropped frames, this is a real *waste* (unnecessary re-renders)
+but not confirmed as *visible jank* — simple text/small-SVG components re-render fast enough on
+modern hardware that this may be more "technically wasteful" than "perceptibly laggy". Flagging
+precisely so it's a deliberate, understood scope decision, not a silent gap.
+
 ## Admin panel / CMS (planned — not started, design notes so we build toward it)
 
 Motivation: today, adding a track, a level, or a docs section means editing a TypeScript file
@@ -769,6 +844,133 @@ site is meant to be gameplay *and* teaching, not just a puzzle with no explanati
   a hook-heavy client component; a true unit-level regression test would need React Testing
   Library + jsdom added to the project, which wasn't picked up in this pass since the E2E
   suite's multi-level-completion flow already exercises this exact path end-to-end.
+
+- **Fixed — docs sidebar scroll-spy (`DocsTrackView`) sometimes activated the wrong section, or
+  skipped one entirely, both on click and on scroll.** Reported by the user with a precise
+  repro ("scroll to Array Methods, click Conditionals, scroll up toward Objects — Objects never
+  activates"); reproduced and root-caused directly rather than guessed at, via three distinct
+  underlying bugs, all from trusting `IntersectionObserver`'s own per-entry data more than it
+  actually guarantees:
+  1. Its callback only reports entries whose intersecting *state changed* since the last check,
+     not a snapshot of every observed section — deriving "active" from just that batch (the
+     original code) meant a short or quickly-scrolled-past section's enter-then-exit could
+     coalesce into a single callback and never register as the topmost intersecting one.
+  2. `entry.boundingClientRect` is a snapshot frozen at whatever moment *that specific entry*
+     last fired. If a section's intersecting status hasn't changed recently, its cached rect is
+     stale relative to a *different* section's freshly-fired entry — confirmed live (measured
+     the actual rects): after clicking two sections in a row, the first section's stale
+     leftover sliver kept winning the "which section is active" comparison over the second,
+     correct, freshly-measured section.
+  3. On short docs pages (Python/HTML's baseline-depth reference content, 4-5 sections), the
+     scroll container can hit its maximum scroll position before the *last* section's top ever
+     reaches the observed band at all — confirmed via measurement that it lands sitting exactly
+     on the band's lower boundary, excluded by a strict `<` comparison, so nothing in the band
+     ever matches and the last section can never become active no matter how long you sit there.
+  4. Found on re-verification after the first fix, not in the original report: reaching the
+     exact bottom via several small incremental scroll steps (rather than one big jump) could
+     settle on stale state, because `IntersectionObserver` only calls back on a threshold
+     *crossing* — if no section crosses a threshold on the final small step, `recompute` simply
+     never runs again, so the "at the bottom" check from bug 3 never gets evaluated for that
+     final position. Confirmed live: stepping to true bottom in 30 small increments left the
+     second-to-last section active; jumping to the identical final position in one move
+     (`scrollTop = scrollHeight`) was correct.
+  **Fix for 1-3**: `IntersectionObserver` is now used purely as an efficient "something changed,
+  go recheck" trigger, not as a source of truth for geometry — the actual decision always
+  re-measures every section's *current* `getBoundingClientRect()` live, and explicitly treats
+  "scrolled to the bottom of the container" (found via walking up from a section to its actual
+  scrollable ancestor, not assuming `window` scrolls — this app's site layout scrolls an inner
+  `overflow-y-auto` div) as "the last section is active," rather than relying on band math that
+  has nowhere left to scroll into. **Fix for 4**: added a plain `scroll` event listener
+  (rAF-throttled) on that same scrollable ancestor as a backstop alongside the
+  `IntersectionObserver`, guaranteeing `recompute` runs on every scroll frame regardless of
+  whether anything crossed a threshold. Also bumped `scroll-mt-20` → `scroll-mt-24` (80px →
+  96px) to exactly match the observer's `-96px` top offset (a small pre-existing mismatch), and
+  the gap between sections `gap-10` → `gap-16` for more scroll-detection margin per the user's
+  own suggestion.
+  Verification was iterative and self-correcting, not a single pass: an initial "all fixed"
+  claim turned out to be based on a flawed test script (it wasn't scrolling the actual inner
+  container, then wasn't reaching the *true* max scroll position) — re-verifying with a
+  corrected script is exactly what caught bugs 3 and 4. Final state, actually confirmed: every
+  sidebar link across all 4 docs tracks (26 total sections) activates correctly on click; a full
+  incremental scroll down *and back up* through every track activates every section in both
+  directions (34/34, repeated twice for stability); the exact user-reported repro passes; a
+  large fast scroll doesn't skip anything; reaching the bottom via 20-30 small steps activates
+  the last section correctly on every track including the short ones. Added
+  `e2e/docs-scroll-spy.spec.ts` (3 tests, including the small-incremental-steps-to-bottom case)
+  to the Playwright suite so this regression class can't silently come back.
+
+- **Investigated and closed — the `Performance.measure()` "TrackIndexPage negative time stamp"
+  error.** Earlier reported as unreproducible; the user later found the real trigger — clicking
+  the game's "Play" nav link *while already inside a level* (a client-side navigation to
+  `/play/[track]`, the Server Component whose entire job is to immediately `redirect()` to
+  level 1). Reproduced reliably every time with that exact repro. Root-caused, not just
+  patched: confirmed via a controlled dev-vs-production comparison (identical click, same
+  build) that this **only happens in `next dev`, never in a production build** — Next.js's
+  dev-mode navigation-timing instrumentation misbehaving on a route that aborts its own render
+  via `redirect()`'s exception-based control flow, not an application bug. The page itself was
+  confirmed to render correctly regardless (screenshotted mid-error) — no error boundary
+  triggered, no broken state. Real production impact: zero. Separately (see next entry), the
+  link this error was tied to no longer points at a redirect-shim page at all, so the trigger
+  condition doesn't come up in normal use anymore either.
+- **Found and fixed — no track picker existed anywhere in the game.** `/play` (no track
+  specified) unconditionally `redirect()`ed to `/play/javascript/1` — a real gap: there was
+  never a way to browse *other* tracks from inside `/play`, and the game's `MenuBar` "Play" nav
+  link only pointed at the *current* track's level 1 (redundant with Reset and the Sidebar's
+  own lesson1 link). Rather than build a second, duplicate track-picker UI, reused what already
+  does this job well: `/learn` (existing `TrackCard` grid, level counts, polished). `/play` now
+  redirects to `/learn` instead of hardcoding JavaScript; `MenuBar`'s "Play" link was renamed
+  "Tracks" and now points at `/learn`. This also sidesteps the dev-mode error above entirely for
+  this specific link, since `/learn` is a normal page, not a redirect-shim.
+
+## Difficulty categories + more lessons (LeetCode-style Easy/Medium/Hard)
+
+Requested directly: group lessons into difficulty tiers (Beginner/Intermediate/Advanced, shown
+per-track on `/learn/[track]`) and grow the total lesson count over time, rather than a flat
+list of 5-6 levels per track forever.
+
+- **Data model**: `Level` gained a required `difficulty: "easy" | "medium" | "hard"` field
+  (`src/lib/tracks/types.ts`, exported as `Difficulty`). Every existing level across all 4
+  tracks (21 levels) was categorized based on the conceptual progression the levels already
+  followed (they were already ordered easy-to-hard, just not labeled): roughly the first half
+  of each track easy, the rest medium. Required (not optional) so TypeScript catches any new
+  level that forgets to set it, rather than silently defaulting to something.
+- **`/learn/[track]`** now groups levels into three sections — Beginner / Intermediate /
+  Advanced — each with a colored dot, level count, and its own card grid; a tier with zero
+  levels renders nothing (no empty "Advanced" heading on tracks that don't have any yet).
+  `LevelCard` gained a small color-coded difficulty badge (green/yellow/red, matching the
+  in-game accent-green/yellow/red tokens) next to the existing title badge.
+- **First batch of new content, JavaScript**: added 2 real "hard" levels — **Closures**
+  (completing a `makeCounter()` closure, testing that a returned inner function keeps live
+  access to an outer variable across calls) and **Destructuring in Callbacks** (destructuring a
+  parameter directly inside a `.reduce()` callback) — populating what was previously an empty
+  Advanced tier for JS. Same full shape as every other level (correct answer + plausible
+  distractor blocks, worm narration, a `concept` recap) and verified actually playable end to
+  end (correct block registers, reward modal shows, JS level 7 correctly detected as the
+  track's last level) — not just added as data and assumed to work.
+- **Python's reference docs** (see `## Content depth...` history) were also expanded from 4
+  baseline sections to the full 12-section JS-quality-bar depth in this same pass — a separate
+  but related "more content" request answered at the same time.
+- **Second batch, same pass (user chose "keep going now, JS + Python first" when asked how to
+  pace this)**: added 4 more levels to each of JS and Python, all medium/hard, all fully built
+  (answer key + distractors + worm narration + concept recap) and verified actually playable —
+  not just data. **JavaScript** (now 11 levels: 3 easy / 5 medium / 3 hard): Objects, Loops
+  (`for...of`), Template Literals, Error Handling (`try`/`catch`). **Python** (now 9 levels: 3
+  easy / 5 medium / 1 hard): Dictionaries, Loops (`for...in`), f-strings, Error Handling
+  (`try`/`except`) — each one deliberately mirroring its JS counterpart topic-for-topic (same
+  concept, language-appropriate syntax), consistent with how the reference docs were already
+  structured earlier this session. Screenshotted the trickiest ones (template literals' nested
+  `` `${}` ``, f-strings' `{}` vs JS's `${}`) to confirm the syntax highlighting renders
+  correctly, not just that the data is well-formed.
+- **Still open — HTML and CSS**: both remain at their original 5-6 levels with no "hard" tier
+  (their Advanced sections don't render yet, same as before this batch). Not touched this pass
+  per the user's own prioritization (JS/Python first). Next natural pickup point whenever
+  content work continues.
+- **Incidentally found and fixed while testing this**: two of the three `level-complete.spec.ts`
+  E2E tests (written before the progress-hydration race fix earlier in this session) dragged a
+  block immediately after page load with no settling wait, which the `hydrated` guard in
+  `dropBlock` now correctly ignores — the same timing gap already fixed once in
+  `sign-in-nudge.spec.ts`, just not yet applied here. Added the same short wait; re-ran the full
+  suite 3 times consecutively to confirm it's actually stable, not just passing once by luck.
 
 ## Roadmap ideas (not yet built — proposed, pick what's worth doing next)
 

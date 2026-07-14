@@ -14,10 +14,13 @@ export interface LevelConcept {
   example?: string;
 }
 
+export type Difficulty = "easy" | "medium" | "hard";
+
 export interface Level {
   id: number;
   title: string;
   filename: string;
+  difficulty: Difficulty;
   objective: string;
   preview: string[];
   codeLines: string[];

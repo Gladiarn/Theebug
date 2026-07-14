@@ -339,3 +339,33 @@ body {
   font-variant-ligatures: none;
   font-feature-settings: "liga" 0, "calt" 0;
 }
+
+/* Custom scrollbar — thin and understated, matching VS Code's own (subtle at rest, brightens
+   on hover, accent on active-drag). Themed via the same CSS vars as everything else, so it
+   updates automatically with the palette — no separate light/dark scrollbar rule needed. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
+}
+*::-webkit-scrollbar-thumb:active {
+  background-color: var(--accent);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}

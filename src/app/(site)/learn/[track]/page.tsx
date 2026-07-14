@@ -4,7 +4,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LevelCard } from "@/components/site/level-card";
 import { TrackIcon } from "@/components/site/track-icon";
-import { getTrack, TRACKS } from "@/lib/tracks";
+import { getTrack, TRACKS, type Difficulty, type Level } from "@/lib/tracks";
+
+const CATEGORIES: { difficulty: Difficulty; label: string; dotClass: string }[] = [
+  { difficulty: "easy", label: "Beginner", dotClass: "bg-accent-green" },
+  { difficulty: "medium", label: "Intermediate", dotClass: "bg-accent-yellow" },
+  { difficulty: "hard", label: "Advanced", dotClass: "bg-accent-red" },
+];
 
 export function generateStaticParams() {
   return TRACKS.filter((t) => !t.comingSoon).map((t) => ({ track: t.id }));
@@ -25,6 +31,13 @@ export default async function TrackSyllabusPage({ params }: { params: Promise<{ 
   const t = getTrack(track);
   if (!t || t.comingSoon) notFound();
 
+  const byDifficulty = new Map<Difficulty, Level[]>();
+  for (const level of t.levels) {
+    const bucket = byDifficulty.get(level.difficulty) ?? [];
+    bucket.push(level);
+    byDifficulty.set(level.difficulty, bucket);
+  }
+
   return (
     <div className="mx-auto w-full max-w-[1100px] box-border px-6 sm:px-12 py-16">
       <div className="mb-10">
@@ -39,10 +52,28 @@ export default async function TrackSyllabusPage({ params }: { params: Promise<{ 
           Start Course
         </Link>
       </div>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
-        {t.levels.map((level) => (
-          <LevelCard key={level.id} level={level} trackId={t.id} />
-        ))}
+
+      <div className="flex flex-col gap-10">
+        {CATEGORIES.map(({ difficulty, label, dotClass }) => {
+          const levels = byDifficulty.get(difficulty);
+          if (!levels || levels.length === 0) return null;
+          return (
+            <div key={difficulty}>
+              <div className="mb-4 flex items-center gap-2">
+                <span className={`h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
+                <h2 className="m-0 font-mono text-sm font-bold uppercase tracking-wide text-text">{label}</h2>
+                <span className="font-mono text-xs text-text-muted">
+                  {levels.length} level{levels.length === 1 ? "" : "s"}
+                </span>
+              </div>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
+                {levels.map((level) => (
+                  <LevelCard key={level.id} level={level} trackId={t.id} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
