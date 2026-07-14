@@ -12,6 +12,7 @@ export const SITE_PAGES: SitePage[] = [
   { href: "/about", label: "About", filename: "about.md", lang: "Markdown" },
   { href: "/faq", label: "FAQ", filename: "faq.md", lang: "Markdown" },
   { href: "/leaderboard", label: "Leaderboard", filename: "leaderboard.md", lang: "Markdown" },
+  { href: "/privacy", label: "Privacy", filename: "privacy.md", lang: "Markdown" },
 ];
 
 export function findSitePage(pathname: string): SitePage {

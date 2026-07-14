@@ -1,14 +1,17 @@
+import { Award } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { auth } from "../../../../auth";
 import { LeaderboardOptInToggle, SignInButton, SignOutButton } from "@/components/site/account-controls";
 import { TrackIcon } from "@/components/site/track-icon";
+import { computeBadges } from "@/lib/badges";
 import { getUserProgress } from "@/lib/progress-db";
 import { TRACKS } from "@/lib/tracks";
 
 export const metadata: Metadata = {
   title: "Account",
   description: "Your Theebug profile and progress.",
+  robots: { index: false, follow: false },
 };
 
 export default async function AccountPage() {
@@ -30,6 +33,7 @@ export default async function AccountPage() {
   }
 
   const progress = await getUserProgress(session.user.id);
+  const badges = computeBadges(progress, TRACKS.filter((t) => !t.comingSoon));
 
   return (
     <div className="mx-auto w-full max-w-[760px] box-border px-6 sm:px-12 py-16">
@@ -77,6 +81,28 @@ export default async function AccountPage() {
           );
         })}
       </div>
+
+      {badges.length > 0 && (
+        <div className="mb-8">
+          <div className="mb-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-accent">
+            {"// badges"}
+          </div>
+          <div className="flex flex-col gap-2">
+            {badges.map((badge) => (
+              <div
+                key={badge.id}
+                className="flex items-center gap-3 rounded-[10px] border border-border bg-panel p-3"
+              >
+                <Award className="h-5 w-5 shrink-0 text-accent-yellow" />
+                <div>
+                  <div className="text-sm font-bold text-text">{badge.label}</div>
+                  <div className="text-xs text-text-muted">{badge.description}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mb-8">
         <LeaderboardOptInToggle initialOptIn={session.user.leaderboardOptIn} />

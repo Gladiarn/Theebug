@@ -13,6 +13,7 @@ const LINK_GROUPS = [
     links: [
       { href: "/about", label: "About" },
       { href: "/faq", label: "FAQ" },
+      { href: "/privacy", label: "Privacy" },
     ],
   },
 ];

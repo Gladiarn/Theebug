@@ -4,6 +4,7 @@ import { Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AuthWidget } from "@/components/site/auth-widget";
+import { LogoMark } from "@/components/site/logo-mark";
 import { useGame } from "@/lib/game-context";
 import { useTheme } from "@/lib/theme-context";
 
@@ -18,13 +19,8 @@ export function MenuBar() {
 
   return (
     <div className="flex h-[30px] shrink-0 select-none items-center border-b border-border bg-menu px-2 text-xs text-text transition-colors duration-200">
-      <div className="mr-1.5 flex w-[22px] items-center justify-center">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <rect x="1" y="1" width="6" height="6" rx="1" fill="#0078D4" />
-          <rect x="9" y="1" width="6" height="6" rx="1" fill="#0078D4" opacity="0.6" />
-          <rect x="1" y="9" width="6" height="6" rx="1" fill="#0078D4" opacity="0.6" />
-          <rect x="9" y="9" width="6" height="6" rx="1" fill="#0078D4" />
-        </svg>
+      <div className="mr-1.5 flex items-center justify-center">
+        <LogoMark className="h-5 w-5 shrink-0" />
       </div>
 
       <Link href="/" className={navLinkClass(false)}>

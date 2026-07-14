@@ -1,7 +1,10 @@
 "use client";
 
 import { Lightbulb, X } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useGame } from "@/lib/game-context";
+
+const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 function formatElapsed(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60);
@@ -28,6 +31,45 @@ export function LevelCompleteModal() {
     dismissReward,
   } = useGame();
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+
+  // Move focus into the dialog on open, and back to whatever had focus before it opened when
+  // it closes — without this, a keyboard/screen-reader user can tab "through" the modal into
+  // the (visually hidden, but still focusable) page behind it.
+  useEffect(() => {
+    if (!justCompleted) return;
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+    return () => previouslyFocusedRef.current?.focus();
+  }, [justCompleted]);
+
+  // Trap Tab/Shift+Tab inside the dialog, and let Escape dismiss it — the two other pieces of
+  // real keyboard-accessible modal behavior beyond "has role=dialog".
+  useEffect(() => {
+    if (!justCompleted) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        dismissReward();
+        return;
+      }
+      if (e.key !== "Tab" || !dialogRef.current) return;
+      const focusables = dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [justCompleted, dismissReward]);
+
   if (!justCompleted) return null;
 
   const isLastLevel = currentLevelIndex === currentTrack.levels.length - 1;
@@ -36,7 +78,9 @@ export function LevelCompleteModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
+      ref={dialogRef}
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 outline-none"
       role="dialog"
       aria-modal="true"
       aria-label="Level complete"

@@ -64,7 +64,7 @@ re-prioritized without losing the "why":
 
 1. ~~**Error boundaries + CI**~~ **Done** (see `## Production readiness`, items 1 and 4, for
    what was actually built and what was found along the way).
-2. **Timer bug fix.** Trivial, isolated, no reason to bundle it with anything else. Next up.
+2. ~~**Timer bug fix.**~~ **Done** (see `## Known bugs`).
 3. **Rate limiting middleware** (Upstash + `@upstash/ratelimit`, designed in `## Security`).
    Early, because the admin panel below adds a whole new `/api/admin/*` surface — better to have
    the rate-limiting pattern already proven on the existing small API surface than to retrofit it
@@ -155,10 +155,12 @@ re-prioritized without losing the "why":
 - Wired into `SiteTopBar` (replacing the generic `lucide-react` `Bug` icon in the logo/home-link
   slot) — verified visually in both themes via screenshot, reads clearly at nav size (20px) in
   both.
-- **Deliberately not touched**: `MenuBar`'s four-square icon in the game shell's top-left corner.
-  That's the literal VS Code logo (an intentional homage — this app is styled *as* VS Code), a
-  different thing from "our brand mark," documented as theme-invariant by design above. Swapping
-  it for the Theebug logo would remove that homage; flag explicitly if that's actually wanted.
+- **Update**: `MenuBar`'s top-left icon (the game shell's header, i.e. the small header on
+  `/play/*` pages) was originally the literal VS Code four-square logo, deliberately left alone
+  as an intentional homage — noted as such right here. The user later explicitly asked for it to
+  use "our logo" instead, so it's now `LogoMark` too (`h-4 w-4`, 16px), same as `SiteTopBar`.
+  Verified in both themes via screenshot. The VS Code homage is gone from this spot; the app's
+  overall VS Code-styled chrome (sidebar, tabs, status bar) is unaffected.
 
 ### Mascot system (`WormMascot`) — replaces the emoji-based worm faces
 
@@ -440,16 +442,36 @@ priority (risk/impact if skipped, not effort):
    tier (5,000 errors/month, plenty at this scale) via `@sentry/nextjs` — a few minutes to wire
    up, and it's what turns "a user emailed me it's broken" into "I got paged before they
    noticed." Pairs with the rate-limiter's fail-open logging above.
-3. **Testing.** Zero automated tests currently — every regression this whole build has been
-   caught by manual `tsc`/`eslint`/`build`/ad-hoc Playwright checks (which work, but don't run
-   automatically and don't accumulate as a safety net). Recommended pyramid, smallest effort
-   first:
-   - **Vitest** unit tests for pure logic: the scoring formula (`Math.max(40, 100 - mistakes *
-     10)`), `mergeLocalProgress`'s "keep the higher score" merge logic, `getLeaderboard`'s
-     aggregation shape — all currently untested and all easy to silently break.
-   - **Playwright E2E** for the critical paths already manually verified ad hoc this session
-     (complete a level → reward modal → next level; sign-in flow; leaderboard opt-in) — turn
-     the scratch scripts already written into a real `e2e/` suite that runs in CI.
+3. **Testing.** ~~Zero automated tests~~ **Vitest unit tests done** (8 tests, wired into CI as a
+   `Test` step before `Build`). Pulled the two pieces of pure logic plan.md had flagged as
+   easy-to-silently-break out into standalone, dependency-free functions so they're actually
+   testable:
+   - `calculateLevelScore` (`src/lib/scoring.ts`) — was inline in `game-context.tsx`'s
+     `dropBlock`. Tests cover the perfect-run case, per-mistake deduction, the 40-point floor,
+     and that it never goes negative.
+   - `pickHigherScoreProgress` (`src/lib/progress-merge.ts`, new file, not left inside
+     `progress-db.ts`) — the "never regress a user's server-side score" decision from
+     `mergeLocalProgress`. Had to live in its own file specifically because `progress-db.ts`
+     has `import "server-only"` at the top, which risks breaking under Vitest's plain-Node test
+     runner (no Next.js bundler involved) — separating pure logic from `server-only`-marked I/O
+     code turned out to be required for testability, not just nice-to-have. Tests cover: no
+     existing progress yet, local wins, server wins (regression prevention — the actual point of
+     this function), and a tie (server wins, local must *strictly* exceed).
+   - ~~Playwright E2E suite~~ **Done.** `@playwright/test` + `playwright.config.ts`
+     (`webServer` auto-builds and starts the app; `reuseExistingServer` locally so it reuses
+     the dev server instead of rebuilding). `e2e/level-complete.spec.ts` — 3 tests: complete a
+     level cleanly (reward modal shows, `+100`/3-star full score, Next Level navigates and the
+     modal closes), a level completed with one mistake (`+90`, confirms the scoring/star
+     deduction path — not just the happy path), and the mascot-based not-found page for an
+     unknown route. Wired into CI as its own `e2e` job (separate from `build`, since it needs
+     Playwright's browser binaries installed via `playwright install --with-deps chromium` and
+     a running server) — uploads the HTML report as a CI artifact on failure for debugging.
+   - **Still not done**: `getLeaderboard`'s aggregation shape (a real MongoDB pipeline — a
+     meaningful test needs a real or mocked DB, a shallow "does this array look right" test
+     wouldn't add real confidence, skipped rather than writing a low-value test to check a box)
+     and any E2E coverage of authenticated flows (sign-in, leaderboard opt-in) — GitHub OAuth
+     isn't something to script through in an E2E test without investing in session-mocking
+     infrastructure, which wasn't picked up in this pass.
 4. ~~**CI (GitHub Actions).**~~ **Done.** `.github/workflows/ci.yml` — runs on every PR into
    `main` and every push to `main`: `npm ci` → `tsc --noEmit` → `eslint .` → `npm run build`.
    **Real finding while building this**: `npm run build` was tested directly (temporarily
@@ -464,29 +486,47 @@ priority (risk/impact if skipped, not effort):
    YAML (commented as such) rather than needing real secrets configured in GitHub — simpler, and
    makes it obvious to anyone reading the workflow that these aren't real credentials. The test
    suite from item 3 above isn't in the workflow yet since it doesn't exist yet.
-5. **SEO fundamentals.** No `sitemap.xml`, no `robots.txt`. Next.js App Router generates both
-   from simple file conventions (`src/app/sitemap.ts`, `src/app/robots.ts`) — low effort, real
-   payoff for organic discovery of `/docs/*` and `/learn/*` content. Per-page `metadata` already
-   exists on most pages (confirmed in earlier phases) — worth double-checking Open Graph
-   image/description coverage while in there.
-6. **Accessibility.** Two concrete gaps worth naming rather than a vague "do an a11y pass":
-   - The `LevelCompleteModal` (Phase 8) has `role="dialog"`/`aria-modal` but no focus trap and
-     doesn't move focus into itself on open or return it on close — a keyboard/screen-reader
-     user can currently tab "through" it into the page behind it.
-   - The core game mechanic (`react-dnd-html5-backend`) is mouse/touch-only by construction —
-     there's no keyboard path to complete a level at all. A real fix is non-trivial (would need
-     a parallel keyboard-operable selection mode for drop zones), so this is worth an explicit
-     product decision (accept it as a known limitation vs. invest in it) rather than a silent gap.
-7. **Analytics.** Nothing currently measures real usage (which tracks people actually finish,
-   where they drop off, sign-in conversion rate). Recommend **Vercel Web Analytics** — free,
-   privacy-friendly (no cookie consent banner needed since it's not third-party tracking),
-   one-line integration (`@vercel/analytics`) since the project's already on Vercel.
-8. **Legal: Privacy Policy.** The app stores real user data (GitHub profile info, progress) via
-   a third-party OAuth provider — a professional site handling that should say so in a Privacy
-   Policy page (what's collected, why, GitHub as the auth provider, MongoDB Atlas as the
-   storage provider, no data sold/shared). A Terms of Service is lower-priority for a free
-   educational tool with no payments/contracts involved. Low effort (a static `(site)` page,
-   same pattern as `/about`/`/faq`), meaningful trust signal.
+5. ~~**SEO fundamentals.**~~ **Done.** `src/app/sitemap.ts` and `src/app/robots.ts` (Next.js file
+   conventions — confirmed rendering correctly at `/sitemap.xml` and `/robots.txt`, and listed as
+   their own routes in `next build` output). Sitemap covers the static marketing pages plus a
+   `/learn/[track]` and `/docs/[track]` entry per non-`comingSoon` track (generated from `TRACKS`,
+   not hand-listed, so new tracks are picked up automatically) — deliberately **excludes**
+   individual `/play/[track]/[level]` pages (too granular/thin-content for SEO value, and the
+   level count shifts over time) and `/account` (private). `robots.txt` disallows `/account` and
+   `/api/`. Also added `robots: { index: false, follow: false }` to `/account`'s own `metadata`
+   export, belt-and-suspenders with the `robots.txt` disallow, since it's user-specific data that
+   shouldn't be indexed either way.
+6. **Accessibility.** Two concrete gaps were named rather than a vague "do an a11y pass" —
+   one is fixed, one is a real product decision, not a quick fix:
+   - ~~`LevelCompleteModal` has no focus trap...~~ **Fixed.** Focus now moves into the dialog on
+     open and back to whatever had focus before it on close; Tab/Shift+Tab cycle within the
+     dialog's focusable elements only (never escape into the page behind it); Escape dismisses.
+     Manual implementation (no new dependency — `querySelectorAll` for focusable elements plus a
+     `keydown` listener), consistent with the rest of the app not reaching for heavy UI
+     libraries. Verified live via Playwright: confirmed focus lands on the dialog itself on open,
+     Tab cycles Close → Review level → Next Level → wraps back to Close (never leaves), and
+     Escape closes it.
+   - **Still open, and still a real product decision, not a quick fix**: the core game mechanic
+     (`react-dnd-html5-backend`) is mouse/touch-only by construction — there's no keyboard path
+     to complete a level at all. A real fix is non-trivial (would need a parallel
+     keyboard-operable selection mode for drop zones) — accept as a known limitation vs. invest
+     in it is a call for the user to make, not something to silently build around.
+7. ~~**Analytics.**~~ **Code done, one manual step left.** `@vercel/analytics` installed,
+   `<Analytics />` added to `src/app/layout.tsx`. **Needs a one-click toggle in the Vercel
+   dashboard** (Project → Analytics tab → Enable) to actually start collecting — this isn't
+   CLI-scriptable (checked: no `vercel analytics` subcommand, nothing in `vercel project
+   inspect`'s output), so it's a manual step for whoever has dashboard access. The component
+   ships beacons regardless; they're just silently ignored until the feature is switched on.
+8. ~~**Legal: Privacy Policy.**~~ **Done.** `src/app/(site)/privacy/page.tsx`, same pattern as
+   `/about`/`/faq`. Covers what's collected (GitHub profile info via OAuth, level progress),
+   the leaderboard's opt-in/off-by-default model, that nothing is sold/shared beyond GitHub
+   (auth) and MongoDB Atlas (storage), the single Auth.js session cookie, and a manual
+   data-deletion path (email, since there's no self-serve account-deletion UI yet). Registered
+   in `site-pages.ts` (so the tab-bar/sidebar/status-bar breadcrumb system — which is driven by
+   `findSitePage()` matching against that registry — renders correctly instead of silently
+   falling back to "Home"), linked from the footer's "company" group, and added to
+   `sitemap.ts`. A Terms of Service was intentionally skipped — lower priority for a free
+   educational tool with no payments/contracts.
 9. **Backups / disaster recovery.** MongoDB Atlas's **M0 free tier does not include automated
    backups** (that's a paid-tier feature) — if the cluster were ever deleted or corrupted,
    there is currently no way to restore user progress. Worth an explicit decision: accept the
@@ -690,29 +730,66 @@ site is meant to be gameplay *and* teaching, not just a puzzle with no explanati
 
 ## Known bugs
 
-- **Level timer doesn't reset on the "Reset" button (mid-level).** Found while investigating a
-  "timer not working" report. Root cause in `src/lib/game-context.tsx`: the ticking `useEffect`
-  captures `levelStartRef.current` once into a local `const start` and every `setInterval` tick
-  reads that closured value, not the ref. `resetLevel()` mutates the ref directly, but its
-  effect dependencies (`levelKey`, `levelComplete`) don't actually change when Reset is clicked
-  on an *incomplete* level (`levelKey` is the same level; `setLevelComplete(false)` when already
-  `false` is a no-op, no re-render) — so the effect never re-runs and the old interval keeps
-  computing from the stale pre-reset timestamp. Confirmed via a live Playwright repro: timer at
-  `0:05`, click Reset, briefly shows `0:00`, then jumps to `0:08` after only 2.2s of waiting.
-  (Resetting an *already-completed* level happens to work, since `levelComplete` genuinely
-  flips `true → false` there, which does re-trigger the effect.) Fix: read
-  `levelStartRef.current` fresh inside the `setInterval` callback instead of closing over a
-  one-time `const` — no dependency-array changes needed. Not yet applied, by request.
+- ~~**Level timer doesn't reset on the "Reset" button (mid-level).**~~ **Fixed.** Root cause was
+  `src/lib/game-context.tsx`'s ticking `useEffect` closing over `levelStartRef.current` once into
+  a local `const start`, so `resetLevel()`'s direct ref mutation had no effect on the
+  already-running `setInterval` (its dependencies don't change when Reset is clicked on an
+  *incomplete* level). Fix applied exactly as designed: the `setInterval` callback now reads
+  `levelStartRef.current` fresh on every tick instead of closing over a one-time `const`.
+  Re-verified with the same Playwright repro that originally caught it: timer climbs to `0:06`,
+  Reset clicked, shows `0:00`, climbs normally afterward (`0:01` after ~2.2s) instead of the old
+  jump to `0:08`.
+
+- **Fixed — a real progress-loss bug, found and fixed while building the E2E suite/sign-in
+  nudge, not something anyone reported.** `score`/`completedLevels` in `game-context.tsx` start
+  at their default `0`/`[]` on every fresh mount (page load, or navigating to a level in a
+  different track), and only get overwritten with the real saved values by a `useEffect` that
+  reads localStorage (or fetches `/api/progress` if signed in). If `dropBlock` completed a level
+  **before that effect had run**, it saved `nextScore = 0 + levelScore` and
+  `nextCompleted = [thisLevel]` — silently **overwriting**, not merging with, every level
+  completed in earlier sessions. Caught by an E2E test that (unlike a real human) can drag a
+  block within milliseconds of page load: completing JS levels 1 → 2 → 3 back-to-back left
+  localStorage with only `{completedLevels: [3], score: 100}` instead of
+  `{completedLevels: [1,2,3], score: 300}`. Confirmed via a standalone repro script that adding
+  a 500ms wait before interacting made the bug disappear — nailing down the exact race.
+  **Fix**: a new `hydrated` state, `false` until the hydration effect has actually read (or
+  fetched) saved progress for the current track/auth state, reset to `false` at the start of
+  every new hydration cycle. `dropBlock` now ignores drops entirely while `!hydrated` — a fresh
+  no-op rather than a corrupting write. Trade-off, stated plainly: for a signed-in user, the
+  `/api/progress` fetch is a real network round-trip, so there's a real (if small and
+  network-dependent) window where a very fast click right after page load could be silently
+  ignored rather than registered — a minor "huh, nothing happened, let me try again" UX rough
+  edge, which is a far better failure mode than silently losing progress. For anonymous/
+  localStorage users this window is sub-millisecond and not realistically hittable by a human.
+  Re-verified: the exact repro script now shows `[1]` → `[1,2]` → `[1,2,3]` correctly
+  accumulating even performing drags immediately (no artificial wait) once `hydrated` gates
+  correctly; the full E2E suite (which does still wait ~150ms before each drag, matching real
+  human timing, not working around the bug) passed reliably across 3 repeated full runs.
+  **Not covered by an automated regression test beyond the E2E suite** — `game-context.tsx` is
+  a hook-heavy client component; a true unit-level regression test would need React Testing
+  Library + jsdom added to the project, which wasn't picked up in this pass since the E2E
+  suite's multi-level-completion flow already exercises this exact path end-to-end.
 
 ## Roadmap ideas (not yet built — proposed, pick what's worth doing next)
 
 Loosely ordered by how much they'd move "this is a teaching game with rewards," which is the
 gap that prompted Phase 8:
 
-1. **Badges/achievements on `/account`.** Reuse the `concept`/completion data that already
-   exists — no new gameplay needed, just a derived view: "Completed a track", "Perfect level (3
-   stars, zero mistakes)", "Speed run under 30s", etc. Purely additive, no schema changes if
-   computed on read from existing `completedLevels`/score data.
+1. ~~**Badges/achievements on `/account`.**~~ **Done**, with one honest scope adjustment from
+   how it was originally proposed. `src/lib/badges.ts` (`computeBadges`, pure function, 6 unit
+   tests) derives badges entirely from data already persisted — no new fields: "Getting
+   Started" (any level done), "Polyglot" (progress in 2+ tracks), per-track "Halfway There"
+   (≥50% of a track), "Track Complete" (100% of a track), and "Perfectionist" (a track finished
+   with the *maximum possible* score). That last one is the adjustment: the original idea was a
+   per-level "3 stars, zero mistakes" badge, but **no per-level mistake count is actually
+   persisted** — only each track's summed score. Turned out to still be honestly derivable
+   though: since every level's max score is 100, a track's total score equalling
+   `levels.length * 100` can only happen if every level in it was completed with zero mistakes,
+   so "Perfectionist" captures the same real signal without needing a new persisted field.
+   Rendered on `/account` between the track-progress list and the leaderboard opt-in toggle,
+   only when at least one badge is earned. Not covered by E2E (requires a real signed-in
+   session, same limitation as the leaderboard opt-in flow) — relying on the unit tests + code
+   review instead.
 2. **Track-completion reward**, distinct from the per-level one — a bigger celebration screen
    when the *last* level of a track finishes (currently it's the same modal as any other level).
    Natural place to show total track time/score and tease the next track.
@@ -733,9 +810,17 @@ gap that prompted Phase 8:
 9. **Shareable completion cards** — an OG-image-generated card ("I finished the Python track on
    Theebug 🐛") for social sharing, using Next.js's built-in `ImageResponse`/OG image generation
    (no new service needed, ships with Next.js).
-10. **Sign-in nudge for anonymous players** — a small dismissible banner after finishing, say,
-    2-3 levels anonymously, warning that progress is only in `localStorage` and offering
-    sign-in — reduces the real risk of someone losing hours of progress to a cleared cache.
+10. ~~**Sign-in nudge for anonymous players**~~ **Done**, and turned up a real bug along the
+    way. `src/components/game/sign-in-nudge.tsx` — a dismissible banner shown once a signed-out
+    player has completed 3+ levels total (any track), offering GitHub sign-in;
+    permanently dismissible via a localStorage flag
+    (`codecanvas:signin-nudge-dismissed:v1`). Re-checks on both session-status changes *and*
+    `justCompleted` from `useGame()` — the second trigger was necessary, since completing a
+    level updates localStorage directly without touching session status, so without it the
+    nudge would only ever evaluate progress from before the current page loaded. Building the
+    E2E test for this (completing 3 levels back-to-back, fast) is what surfaced the hydration
+    race condition documented in `## Known bugs` above — the nudge feature itself was never
+    buggy, but writing a fast automated test for it caught something a slower human never would.
 11. **Docs search** — a simple client-side fuzzy search (e.g. over the existing
     `REFERENCES`/section data, no external search service needed at this content size) across
     `/docs/*` sections.

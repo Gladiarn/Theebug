@@ -3,6 +3,7 @@ import { EditorArea } from "./editor-area";
 import { LevelCompleteModal } from "./level-complete-modal";
 import { RightPanel } from "./right-panel";
 import { Sidebar } from "./sidebar";
+import { SignInNudge } from "./sign-in-nudge";
 import { Terminal } from "./terminal";
 
 export function GamePlayShell() {
@@ -16,6 +17,7 @@ export function GamePlayShell() {
       </div>
       <RightPanel />
       <LevelCompleteModal />
+      <SignInNudge />
     </div>
   );
 }
