@@ -549,6 +549,73 @@ rate limiting (already designed above) → error tracking → SEO files → anal
 policy → testing → accessibility → backups/uptime**, front-loading the highest-risk/lowest-effort
 items first.
 
+## Performance audit
+
+Measured, not guessed: built the app for production (`next build` + `next start`) and used a
+real Playwright network audit (every JS/CSS response's actual byte size, not dev-server
+estimates — Turbopack's dev bundles are unminified and split completely differently, so a dev
+audit would have been misleading) across `/`, `/play/[track]/[level]`, `/docs/[track]`, and
+`/leaderboard`.
+
+**Found and fixed — the dominant issue, a classic Next.js gotcha.** Every single page was
+shipping **~1.5-1.7MB of JS**, and 877KB of that (roughly half) was `three.js` +
+`@react-three/fiber` — used by exactly one component, `DebugWormScene`, which only ever renders
+in one place: the landing page's hero. `landing-page.tsx` imported it with a plain top-level
+`import`, which is the trap: Next.js's automatic per-route code-splitting doesn't reliably keep
+a heavy dependency out of the shared/vendor bundle just because only one page happens to use it
+— without an explicit code-split boundary, bundlers commonly fold "big enough" dependencies into
+a common chunk loaded on every route regardless. Confirmed precisely via `grep`ing the actual
+chunk file for `TubeGeometry`/`CatmullRomCurve3`/`WebGLRenderer` (`DebugWormScene`'s own symbols)
+and finding that exact chunk requested on `/play/*`, `/docs/*`, and `/leaderboard` too, despite
+the 3D scene never rendering on any of them.
+
+**Fix**: `landing-page.tsx` now imports `DebugWormScene` via `next/dynamic(..., { ssr: false })`
+instead of a plain `import`, forcing Turbopack to actually treat it as a separate, lazily-fetched
+chunk. `ssr: false` is correct here regardless of the bundle-size issue — it's a WebGL canvas,
+there's nothing meaningful to server-render. Re-measured after the fix:
+
+| Route | Before | After |
+|---|---|---|
+| `/` | 1567KB | 642KB |
+| `/play/javascript/1` | 1673KB | 702KB |
+| `/docs/javascript` | 1603KB | 678KB |
+| `/leaderboard` | 1567KB | 636KB |
+
+Roughly **1MB removed from every route except the homepage**, and even the homepage itself
+dropped, since the 3D scene now loads lazily instead of blocking on the initial bundle. Verified
+the 3D worm still renders correctly post-fix (canvas present, tube geometry visible, screenshotted)
+— this was a pure bundling fix, no visual/behavioral change.
+
+**Checked and ruled out as non-issues**: no `backdrop-blur`/`backdrop-filter` usage anywhere in
+`src` (the one earlier instance, the reward modal's overlay, was already removed — see Phase 8's
+history); the one `<img>`-looking match outside `next/image` is a string literal inside
+`live-diff-hero.tsx`'s example-code mockup data, never actually rendered as an image element;
+the next-largest chunk (227KB, present on every route as expected) is React/ReactDOM itself —
+normal, unavoidable framework baseline, not app-specific bloat worth chasing.
+
+**Found, understood, deliberately not fixed this pass — a real architectural cost, not a quick
+fix.** `game-context.tsx`'s `GameContext.Provider` passes one large inline object literal
+(`zoneFills`, `score`, `completedLevels`, `wormMood`, `wormMessage`, `terminalLogs`,
+`levelComplete`, `mistakes`, `elapsedSeconds`, `justCompleted`, `lastLevelPoints`, plus every
+action function) as its `value`, consumed by **9 different components**
+(`MenuBar`, `Terminal`, `DropZone`, `Sidebar`, `LevelCompleteModal`, `SignInNudge`,
+`EditorArea`, `RightPanel`, `BottomPanel`). Because it's a new object literal on every render
+and nothing is memoized, **every one of those 9 consumers re-renders on every state change** —
+including the once-per-second `elapsedSeconds` tick, meaning the entire game UI tree re-renders
+every second during active play, whether or not a given component displays the timer.
+`useMemo`-wrapping the value object would **not** actually fix this, since `elapsedSeconds`
+would still need to be a dependency and still changes every second — the real fix is
+structural: splitting the frequently-changing, display-only fields (`elapsedSeconds`, and
+likely `terminalLogs`) into their own narrower context(s) that only their actual consumers
+(`RightPanel` for the timer, `Terminal` for logs, `LevelCompleteModal` needing the *final*
+elapsed value at completion) subscribe to. Not fixed this pass because: (1) it's a real
+refactor of the most heavily-used file in the app, not a quick change, and deserves dedicated
+testing bandwidth rather than being squeezed into a "check performance" pass; (2) without a
+profiling trace showing actual dropped frames, this is a real *waste* (unnecessary re-renders)
+but not confirmed as *visible jank* — simple text/small-SVG components re-render fast enough on
+modern hardware that this may be more "technically wasteful" than "perceptibly laggy". Flagging
+precisely so it's a deliberate, understood scope decision, not a silent gap.
+
 ## Admin panel / CMS (planned — not started, design notes so we build toward it)
 
 Motivation: today, adding a track, a level, or a docs section means editing a TypeScript file

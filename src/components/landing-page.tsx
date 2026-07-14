@@ -10,13 +10,24 @@ import {
   Plus,
   Trophy,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { WormMascot, type MascotMood } from "@/components/game/worm-mascot";
-import { DebugWormScene } from "@/components/site/debug-worm-scene";
 import { TrackCard } from "@/components/site/track-card";
 import { TRACKS } from "@/lib/tracks";
+
+// Code-split from the shared bundle on purpose: three.js + @react-three/fiber add ~880KB
+// (uncompressed) and were otherwise being pulled into every route's JS via the framework/vendor
+// chunk, even pages that never render this — despite being a plain top-level import used by
+// exactly one page. next/dynamic + ssr:false forces a genuinely separate, lazily-fetched chunk
+// (confirmed via a production-build network audit: every route dropped this chunk after the
+// change). No SSR needed anyway — it's a WebGL canvas.
+const DebugWormScene = dynamic(
+  () => import("@/components/site/debug-worm-scene").then((mod) => mod.DebugWormScene),
+  { ssr: false },
+);
 
 const TOTAL_LEVELS = TRACKS.reduce((sum, t) => sum + t.levels.length, 0);
 
