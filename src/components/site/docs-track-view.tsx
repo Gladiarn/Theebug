@@ -2,7 +2,7 @@
 
 import { Lightbulb } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { TrackReference } from "@/lib/reference";
 import { TRACKS, type Track } from "@/lib/tracks";
 import { TrackIcon } from "./track-icon";
@@ -11,23 +11,94 @@ export function DocsTrackView({ track, reference }: { track: Track; reference: T
   const [active, setActive] = useState(reference.sections[0]?.id);
   const otherTracks = TRACKS.filter((t) => t.id !== track.id && !t.comingSoon);
 
+  // Three bugs came out of the original version of this effect, all from trusting
+  // IntersectionObserver's own per-entry data too much:
+  //
+  // 1. Its callback only reports entries whose intersecting *state changed* since the last
+  //    check, not a snapshot of every observed section. Deriving "active" from just that batch
+  //    meant a short/quickly-scrolled-past section's enter+exit could coalesce into one
+  //    callback and never register as the topmost intersecting one.
+  // 2. `entry.boundingClientRect` is a snapshot frozen at whatever moment *that* entry last
+  //    fired — if a section's intersecting status hasn't changed recently, its cached rect can
+  //    be stale relative to a *different* section's freshly-fired entry, so comparing rects
+  //    across entries from different callback times silently compares stale-vs-fresh geometry
+  //    (confirmed live: after clicking two sections in a row, the first section's stale
+  //    left-over sliver kept winning over the second section's fresh, larger, correct one).
+  // 3. On short docs pages (few/short sections), the container can hit its max scroll before
+  //    the last section's top ever reaches the observed band at all — it gets stuck exactly at
+  //    the band's bottom edge (confirmed: rect.top === bandBottom, excluded by a strict `<`),
+  //    so nothing in the band ever matches and the last section never activates.
+  //
+  // Fix: IntersectionObserver is used purely as an efficient "something changed, go recheck"
+  // trigger — the actual decision always re-measures every section's *current*
+  // `getBoundingClientRect()` live (never a cached entry rect), and explicitly treats "scrolled
+  // to the bottom of the container" as "the last section is active" rather than relying on band
+  // math that has nowhere left to scroll into.
   useEffect(() => {
     const sections = reference.sections
       .map((s) => document.getElementById(s.id))
       .filter((el): el is HTMLElement => el !== null);
+    if (sections.length === 0) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
-      },
-      { rootMargin: "-96px 0px -70% 0px", threshold: 0 },
-    );
+    const getScrollParent = (el: HTMLElement): HTMLElement | Window => {
+      let node = el.parentElement;
+      while (node) {
+        const style = getComputedStyle(node);
+        if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight) return node;
+        node = node.parentElement;
+      }
+      return window;
+    };
+    const scrollParent = getScrollParent(sections[0]);
 
+    const BAND_TOP = 96;
+
+    const recompute = () => {
+      const { scrollTop, scrollHeight, clientHeight } =
+        scrollParent === window
+          ? { scrollTop: window.scrollY, scrollHeight: document.documentElement.scrollHeight, clientHeight: window.innerHeight }
+          : (scrollParent as HTMLElement);
+      if (scrollTop + clientHeight >= scrollHeight - 2) {
+        setActive(sections[sections.length - 1].id);
+        return;
+      }
+
+      const bandBottom = window.innerHeight * 0.3;
+      const inBand = sections
+        .map((el) => ({ id: el.id, rect: el.getBoundingClientRect() }))
+        .filter(({ rect }) => rect.bottom > BAND_TOP && rect.top < bandBottom)
+        // Prefer whichever section's top is closest to (but not below) the band's bottom edge
+        // — the one most recently entered, i.e. actually being read — over one that's mostly
+        // scrolled past and just has a trailing sliver still poking into the band.
+        .sort((a, b) => b.rect.top - a.rect.top);
+      if (inBand[0]) setActive(inBand[0].id);
+    };
+
+    const observer = new IntersectionObserver(recompute, { rootMargin: "-96px 0px -70% 0px", threshold: 0 });
     sections.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+
+    // Belt-and-suspenders: IntersectionObserver only calls back on a threshold *crossing*, not
+    // on every scroll movement. Arriving at the exact bottom via several small incremental
+    // scroll steps (confirmed live) can settle without any further crossing firing on the last
+    // step, leaving `active` stuck on stale state — a plain `scroll` listener (rAF-throttled)
+    // guarantees `recompute` still runs on every scroll frame regardless of whether anything
+    // crossed a threshold.
+    let rafId: number | null = null;
+    const onScroll = () => {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        recompute();
+      });
+    };
+    const scrollTarget: HTMLElement | Window = scrollParent;
+    scrollTarget.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      scrollTarget.removeEventListener("scroll", onScroll);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, [reference]);
 
   return (
@@ -84,9 +155,9 @@ export function DocsTrackView({ track, reference }: { track: Track; reference: T
           <p className="text-sm leading-relaxed text-text-muted">{track.description}</p>
         </div>
 
-        <div className="flex flex-col gap-10">
+        <div className="flex flex-col gap-16">
           {reference.sections.map((section) => (
-            <section key={section.id} id={section.id} className="scroll-mt-20">
+            <section key={section.id} id={section.id} className="scroll-mt-24">
               <h2 className="m-0 mb-2 font-mono text-base font-bold text-text">
                 <span className="text-code-comment">{"/** "}</span>
                 {section.title}

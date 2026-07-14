@@ -10,6 +10,7 @@ export const javascriptTrack: Track = {
       id: 1,
       title: "Variables",
       filename: "lesson1.js",
+      difficulty: "easy",
       objective: 'Assign values to the variables so the program outputs "Hello World 42"',
       preview: ["Hello World 42"],
       codeLines: [
@@ -48,6 +49,7 @@ export const javascriptTrack: Track = {
       title: "Functions",
       filename: "lesson2.js",
       objective: 'Complete the "add" function so it returns the sum of a and b (should output 10)',
+      difficulty: "easy",
       preview: ["10"],
       codeLines: [
         "function add(a, b) {",
@@ -83,6 +85,7 @@ export const javascriptTrack: Track = {
       filename: "lesson3.js",
       objective: "Use the correct array property to loop through all fruits and log each one",
       preview: ["apple", "banana", "cherry"],
+      difficulty: "easy",
       codeLines: [
         'const fruits = ["apple", "banana", "cherry"];',
         "",
@@ -114,6 +117,7 @@ export const javascriptTrack: Track = {
       id: 4,
       title: "Array Methods",
       filename: "lesson4.js",
+      difficulty: "medium",
       objective: "Use the right array method to create a new array with each number doubled",
       preview: ["[2, 4, 6, 8, 10]"],
       codeLines: [
@@ -147,6 +151,7 @@ export const javascriptTrack: Track = {
       id: 5,
       title: "Conditionals",
       filename: "lesson5.js",
+      difficulty: "medium",
       objective: "Add the right comparison operator to check if age is 18 OR older",
       preview: ['"You can vote!"', '"Too young"'],
       codeLines: [
@@ -171,7 +176,7 @@ export const javascriptTrack: Track = {
       wormIntro:
         'The condition should be true when age is 18 OR older! Which comparison operator means "greater than OR equal to"? Not just greater than — equal counts too!',
       wormCorrectAll:
-        "You did it! >= means greater than OR equal to, so 18 still passes! You've completed all 5 levels! You're a JavaScript hero! 🏆🎊",
+        "You did it! >= means greater than OR equal to, so 18 still passes! Beginner levels done — ready for something tougher? 🏆",
       concept: {
         summary: "Comparison operators (>=, <=, ===, !==) turn a question into true or false, which `if` then acts on.",
         details: [
@@ -180,6 +185,213 @@ export const javascriptTrack: Track = {
           "An `if` block only runs its body when the condition evaluates to `true`. Once a `return` inside it fires, the function exits immediately — the code after the `if` never runs for that case.",
         ],
         example: 'function canRent(age) {\n  if (age >= 25) return true;\n  return false;\n}\nconsole.log(canRent(25)); // true — 25 counts as >= 25',
+      },
+    },
+    {
+      id: 6,
+      title: "Closures",
+      filename: "lesson6.js",
+      difficulty: "hard",
+      objective: "Complete the closure so each call to counter() increases and returns the running count",
+      preview: ["1", "2"],
+      codeLines: [
+        "function makeCounter() {",
+        "  let count = 0;",
+        "  return function () {",
+        "    count {{zone1}} 1;",
+        "    return count;",
+        "  };",
+        "}",
+        "",
+        "const counter = makeCounter();",
+        "console.log(counter()); // 1",
+        "console.log(counter()); // 2",
+      ],
+      zones: [{ id: "zone1", answer: "+=" }],
+      blocks: [
+        { id: "b1", code: "+=" },
+        { id: "b2", code: "=" },
+        { id: "b3", code: "==" },
+        { id: "b4", code: "*=" },
+      ],
+      wormIntro:
+        "This inner function needs to REMEMBER and increase count every time it's called — that's a closure! Which operator adds 1 and saves the new value back into count?",
+      wormCorrectAll:
+        "Yes! += adds 1 to count and reassigns it — and because it's a closure, count survives between calls! You just built a stateful counter! 🔒✨",
+      concept: {
+        summary:
+          "A closure lets an inner function remember variables from the outer function that created it, even after that outer function has returned.",
+        details: [
+          "makeCounter() runs once and returns a NEW function — but that returned function keeps a private link back to count, the variable from its enclosing scope. Every time you call counter(), it's still working with that same remembered count, not a fresh one.",
+          "This is different from a normal function whose local variables are wiped clean every call. Closures are how JavaScript builds things like private state, memoized functions, and event handlers that remember data — without any object or class needed.",
+          "+= is shorthand for count = count + 1 — reassigning inside the closure works because the inner function has real read/write access to the outer variable, not just a copy of its value.",
+        ],
+        example:
+          'function makeAdder(start) {\n  let total = start;\n  return (n) => {\n    total += n;\n    return total;\n  };\n}\nconst add = makeAdder(10);\nadd(5); // 15\nadd(5); // 20',
+      },
+    },
+    {
+      id: 7,
+      title: "Destructuring in Callbacks",
+      filename: "lesson7.js",
+      difficulty: "hard",
+      objective: "Destructure each student object in the reduce callback to pull out just the score",
+      preview: ["170"],
+      codeLines: [
+        "const students = [",
+        '  { name: "Ana", score: 80 },',
+        '  { name: "Bo", score: 90 },',
+        "];",
+        "",
+        "const total = students.reduce((sum, {{zone1}}) => sum + score, 0);",
+        "console.log(total); // 170",
+      ],
+      zones: [{ id: "zone1", answer: "{ score }" }],
+      blocks: [
+        { id: "b1", code: "{ score }" },
+        { id: "b2", code: "score" },
+        { id: "b3", code: "{ name }" },
+        { id: "b4", code: "student" },
+      ],
+      wormIntro:
+        "reduce's callback gets each full student object — but we only need the score! Destructure the parameter to grab just that property directly.",
+      wormCorrectAll:
+        "Exactly! { score } pulls the score property straight out of each student object as you receive it — no need for student.score everywhere! 🎯",
+      concept: {
+        summary:
+          "You can destructure directly inside a function's parameter list, not just in a separate assignment — pulling out just the properties you need.",
+        details: [
+          "({ score }) as a parameter is shorthand for \"this argument is an object — immediately unpack its score property into a variable called score.\" It's the same destructuring syntax as const { score } = student, just written inline where the parameter would normally go.",
+          "This is especially common in array methods like .map(), .filter(), and .reduce(), where the callback receives a full object but the logic only cares about one or two of its properties — destructuring in the parameter list skips writing student.score repeatedly.",
+          "You can rename while destructuring too: ({ score: points }) would let you use points instead of score inside the function, useful when the property name already means something else in scope.",
+        ],
+        example:
+          'const users = [{ name: "Ana", age: 25 }, { name: "Bo", age: 30 }];\nconst names = users.map(({ name }) => name);\n// ["Ana", "Bo"]',
+      },
+    },
+    {
+      id: 8,
+      title: "Objects",
+      filename: "lesson8.js",
+      difficulty: "medium",
+      objective: "Access the user's name property using dot notation",
+      preview: ["Ada"],
+      codeLines: ["const user = { name: \"Ada\", age: 30 };", "console.log(user.{{zone1}});"],
+      zones: [{ id: "zone1", answer: "name" }],
+      blocks: [
+        { id: "b1", code: "name" },
+        { id: "b2", code: "user" },
+        { id: "b3", code: "key" },
+        { id: "b4", code: "value" },
+      ],
+      wormIntro: "Objects store data as key-value pairs. Which property holds the user's name?",
+      wormCorrectAll: "user.name reads the name property directly! Objects are everywhere in JS — get comfortable with dot notation!",
+      concept: {
+        summary: "Dot notation (object.property) reads a value stored on an object by its key.",
+        details: [
+          "An object like { name: \"Ada\", age: 30 } groups related data under named keys. user.name reads the value stored at the \"name\" key — as long as the key is a valid identifier, dot notation is the cleanest way to access it.",
+          'Bracket notation (user["name"]) does the same thing but works even when the key isn\'t a valid identifier, or when the key is stored in a variable: const key = "name"; user[key] works, but user.key would look for a literal property called "key".',
+          "Accessing a property that doesn't exist returns undefined rather than throwing an error — user.email on this object is undefined, not a crash.",
+        ],
+        example: 'const car = { brand: "Toyota", year: 2020 };\nconsole.log(car.brand); // "Toyota"\nconsole.log(car.color); // undefined',
+      },
+    },
+    {
+      id: 9,
+      title: "Loops",
+      filename: "lesson9.js",
+      difficulty: "medium",
+      objective: "Complete the for...of loop to print each color",
+      preview: ["red", "green", "blue"],
+      codeLines: ['const colors = ["red", "green", "blue"];', "for (const color {{zone1}} colors) {", "  console.log(color);", "}"],
+      zones: [{ id: "zone1", answer: "of" }],
+      blocks: [
+        { id: "b1", code: "of" },
+        { id: "b2", code: "in" },
+        { id: "b3", code: "to" },
+        { id: "b4", code: "=" },
+      ],
+      wormIntro: "for...of loops directly over an array's VALUES. Which keyword completes it?",
+      wormCorrectAll: "for...of gives you each value directly — no index needed! Perfect for looping over arrays!",
+      concept: {
+        summary: "for...of loops directly over the values of an iterable (arrays, strings, and more), without needing an index.",
+        details: [
+          "for (const color of colors) visits each item in colors one at a time, binding it to color — much more direct than the classic for (let i = 0; i < colors.length; i++) + colors[i] pattern.",
+          "Don't confuse it with for...in, which loops over an object's KEYS (or an array's indexes as strings) — for...of gives you values, for...in gives you keys. Using for...in on an array is almost always a mistake.",
+          "for...of works on any iterable, not just arrays — strings, Maps, Sets, and more all support it.",
+        ],
+        example: 'for (const char of "hi") {\n  console.log(char);\n}\n// "h"\n// "i"',
+      },
+    },
+    {
+      id: 10,
+      title: "Template Literals",
+      filename: "lesson10.js",
+      difficulty: "medium",
+      objective: "Complete the template literal to interpolate the age variable",
+      preview: ['"Ada is 30 years old"'],
+      codeLines: [
+        'const name = "Ada";',
+        "const age = 30;",
+        "const bio = `${name} is {{zone1}} years old`;",
+        "console.log(bio);",
+      ],
+      zones: [{ id: "zone1", answer: "${age}" }],
+      blocks: [
+        { id: "b1", code: "${age}" },
+        { id: "b2", code: "age" },
+        { id: "b3", code: "{age}" },
+        { id: "b4", code: "$age" },
+      ],
+      wormIntro: "Template literals use ${} to embed a variable's value directly into a string. Which block correctly interpolates age?",
+      wormCorrectAll: "${age} evaluates age and drops it right into the string! Much cleaner than + concatenation!",
+      concept: {
+        summary: "Template literals (backtick strings) let you embed any expression directly inside a string using ${}.",
+        details: [
+          "`${name} is ${age} years old` — the backticks (not quotes) enable this. Anything inside ${} is evaluated as a real JavaScript expression and converted to a string, then spliced into place.",
+          'Before template literals, the same string required concatenation: name + " is " + age + " years old" — readable for short strings, but gets messy fast with more variables or extra formatting.',
+          "Template literals also support real multi-line strings without needing \\n — a backtick string can span multiple lines exactly as typed.",
+        ],
+        example: 'const price = 19.99;\nconsole.log(`Total: $${price * 2}`); // "Total: $39.98"',
+      },
+    },
+    {
+      id: 11,
+      title: "Error Handling",
+      filename: "lesson11.js",
+      difficulty: "hard",
+      objective: "Complete the try/catch so a parsing failure returns null instead of crashing",
+      preview: ["42", "null"],
+      codeLines: [
+        "function parseNumber(str) {",
+        "  try {",
+        "    return JSON.parse(str);",
+        "  {{zone1}} (err) {",
+        "    return null;",
+        "  }",
+        "}",
+        "",
+        'console.log(parseNumber("42"));      // 42',
+        'console.log(parseNumber("invalid")); // null',
+      ],
+      zones: [{ id: "zone1", answer: "catch" }],
+      blocks: [
+        { id: "b1", code: "catch" },
+        { id: "b2", code: "except" },
+        { id: "b3", code: "error" },
+        { id: "b4", code: "finally" },
+      ],
+      wormIntro: "Code that might fail goes in try. Which keyword catches the error if it throws?",
+      wormCorrectAll:
+        "catch (err) runs only if something inside try throws — now bad input returns null instead of crashing the whole program! You've completed the JavaScript track! 🏆🎊",
+      concept: {
+        summary: "try/catch lets you run code that might fail without crashing the whole program.",
+        details: [
+          "Code inside try runs normally until something throws — the moment that happens, execution jumps straight into catch (err), skipping the rest of the try block entirely. err holds the actual error object that was thrown.",
+          '`JSON.parse("invalid")` throws a SyntaxError because "invalid" isn\'t valid JSON — without a try/catch around it, that error would crash the whole program instead of being handled gracefully.',
+          "finally (not used here) runs a block of cleanup code whether or not an error occurred — common for closing a connection or resetting UI state no matter how the try block turned out.",
+        ],
+        example: 'try {\n  undefinedFunction();\n} catch (err) {\n  console.log("Caught:", err.message);\n}',
       },
     },
   ],

@@ -8,6 +8,10 @@ import { expect, test } from "@playwright/test";
 test("completing a level shows the reward modal and Next Level advances", async ({ page }) => {
   await page.goto("/play/javascript/1");
   await page.waitForSelector("text=Debug says");
+  // A real human always takes longer than this to read the objective and drag a block — this
+  // wait exists purely so the test doesn't drop faster than GameProvider's progress-hydration
+  // effect (see game-context.tsx's `hydrated` guard, which dropBlock ignores drops during).
+  await page.waitForTimeout(300);
 
   const blocks = page.locator('div[class*="cursor-grab"]');
   const zones = page.locator('span[class*="min-w-\\[90px\\]"]');
@@ -31,6 +35,7 @@ test("completing a level shows the reward modal and Next Level advances", async 
 test("a wrong drop reduces the awarded score and star rating", async ({ page }) => {
   await page.goto("/play/javascript/1");
   await page.waitForSelector("text=Debug says");
+  await page.waitForTimeout(300);
 
   const blocks = page.locator('div[class*="cursor-grab"]');
   const zones = page.locator('span[class*="min-w-\\[90px\\]"]');

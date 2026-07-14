@@ -15,7 +15,6 @@ export function MenuBar() {
   const pathname = usePathname();
   const { isDark, toggleTheme } = useTheme();
   const { currentTrack, resetLevel } = useGame();
-  const playHref = `/play/${currentTrack.id}`;
 
   return (
     <div className="flex h-[30px] shrink-0 select-none items-center border-b border-border bg-menu px-2 text-xs text-text transition-colors duration-200">
@@ -26,8 +25,12 @@ export function MenuBar() {
       <Link href="/" className={navLinkClass(false)}>
         Home
       </Link>
-      <Link href={playHref} className={navLinkClass(pathname.startsWith(playHref))}>
-        Play
+      {/* Points at the track picker, not the current track's level 1 — "Play" reads as "let me
+          choose something to play," not "restart what I'm already on" (that's what Reset is
+          for). Also sidesteps a Next.js dev-mode-only console error triggered by client-side
+          navigating to a route that immediately redirect()s (confirmed absent in production). */}
+      <Link href="/learn" className={navLinkClass(pathname === "/learn")}>
+        Tracks
       </Link>
       <button onClick={resetLevel} className={navLinkClass(false)}>
         Reset

@@ -17,7 +17,7 @@ export default function PrivacyPage() {
       <div className="flex flex-col gap-6 text-sm leading-relaxed text-text-muted">
         <p>
           Theebug is a free, personal project — this policy is short because there isn&apos;t much to say.
-          You can use every level in <span className="font-bold text-text">/play</span> without an account
+          You can use every level in <span className="font-bold text-text">/play </span> without an account
           and without anything being sent anywhere beyond your own browser&apos;s local storage.
         </p>
         <p>

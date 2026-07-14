@@ -1,6 +1,12 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import type { Level } from "@/lib/tracks";
+import type { Difficulty, Level } from "@/lib/tracks";
+
+const DIFFICULTY_CLASS: Record<Difficulty, string> = {
+  easy: "border-accent-green/40 text-accent-green",
+  medium: "border-accent-yellow/40 text-accent-yellow",
+  hard: "border-accent-red/40 text-accent-red",
+};
 
 export function LevelCard({ level, trackId }: { level: Level; trackId: string }) {
   return (
@@ -12,9 +18,14 @@ export function LevelCard({ level, trackId }: { level: Level; trackId: string })
         <span className="font-mono text-[11px] text-text-muted">
           0{level.id} — {level.filename}
         </span>
-        <span className="rounded-lg border border-border bg-badge-bg px-2 py-0.5 text-[11px] text-accent-yellow">
-          {level.title}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className={`rounded-full border px-1.5 py-0.5 text-[10px] capitalize ${DIFFICULTY_CLASS[level.difficulty]}`}>
+            {level.difficulty}
+          </span>
+          <span className="rounded-lg border border-border bg-badge-bg px-2 py-0.5 text-[11px] text-accent-yellow">
+            {level.title}
+          </span>
+        </div>
       </div>
       <div className="flex-1 p-3.5 font-mono text-xs leading-[1.7]">
         {level.codeLines.slice(0, 5).map((line, i) => {
