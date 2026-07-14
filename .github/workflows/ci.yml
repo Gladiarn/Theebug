@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint .
+
+      - name: Build
+        run: npm run build
+        env:
+          # Build-time only, never real — src/lib/mongodb.ts throws if MONGO_URI is unset
+          # (Next.js imports API route modules during "collecting page data", even for
+          # force-dynamic routes), but nothing actually connects at build time, so a
+          # non-empty placeholder is sufficient. Confirmed by testing locally with these
+          # exact fake values before writing this workflow.
+          MONGO_URI: mongodb+srv://ci:ci@ci.mongodb.net/Theebug
+          JWT_SECRET: ci-build-placeholder-not-a-real-secret
+          AUTH_GITHUB_ID: ci-placeholder-id
+          AUTH_GITHUB_SECRET: ci-placeholder-secret

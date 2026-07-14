@@ -3,12 +3,9 @@
 import {
   ArrowDown,
   ArrowRight,
-  Bug,
   CircleCheckBig,
   Eye,
-  Frown,
   MousePointerClick,
-  PartyPopper,
   Play,
   Plus,
   Trophy,
@@ -16,6 +13,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
+import { WormMascot, type MascotMood } from "@/components/game/worm-mascot";
 import { DebugWormScene } from "@/components/site/debug-worm-scene";
 import { TrackCard } from "@/components/site/track-card";
 import { TRACKS } from "@/lib/tracks";
@@ -47,10 +45,10 @@ const FEATURES = [
   "File sidebar tracks your progress",
 ];
 
-const MOODS = [
-  { icon: Frown, label: "Sad", className: "text-accent-red" },
-  { icon: Bug, label: "Neutral", className: "text-accent" },
-  { icon: PartyPopper, label: "Party", className: "text-accent-green" },
+const MOODS: { mood: MascotMood; label: string }[] = [
+  { mood: "sad", label: "Sad" },
+  { mood: "neutral", label: "Neutral" },
+  { mood: "celebrating", label: "Party" },
 ];
 
 function SectionLabel({ children }: { children: string }) {
@@ -194,12 +192,12 @@ export function LandingPage() {
       <section className="px-6 py-[72px] sm:px-12">
         <div className="mx-auto flex max-w-[900px] flex-wrap items-center justify-center gap-12">
           <div className="flex shrink-0 flex-col items-center gap-4">
-            <Bug className="hero-worm h-24 w-24 text-accent" strokeWidth={1.4} />
+            <WormMascot mood="proud" className="hero-worm h-24 w-24" />
             <div className="font-mono text-xs text-text-muted">Debug the Worm</div>
             <div className="flex gap-4">
-              {MOODS.map(({ icon: Icon, label, className }) => (
+              {MOODS.map(({ mood, label }) => (
                 <div key={label} className="flex flex-col items-center gap-1">
-                  <Icon className={`h-5 w-5 ${className}`} />
+                  <WormMascot mood={mood} className="h-6 w-6" />
                   <span className="text-[10px] text-text-muted">{label}</span>
                 </div>
               ))}
@@ -217,28 +215,30 @@ export function LandingPage() {
               the terminal is strictly for system logs.
             </p>
             <div className="flex flex-col gap-2.5">
-              {[
-                {
-                  textClass: "text-accent",
-                  borderClass: "border-accent",
-                  text: '"Drag the return block into the empty slot to complete the function!"',
-                },
-                {
-                  textClass: "text-accent-green",
-                  borderClass: "border-accent-green",
-                  text: "\"Perfect! a + b adds both parameters! You're getting it!\"",
-                },
-                {
-                  textClass: "text-accent-red",
-                  borderClass: "border-accent-red",
-                  text: "\"Hmm, that's not quite right. Try a different block!\"",
-                },
-              ].map(({ textClass, borderClass, text }) => (
+              {(
+                [
+                  {
+                    mood: "neutral",
+                    borderClass: "border-accent",
+                    text: '"Drag the return block into the empty slot to complete the function!"',
+                  },
+                  {
+                    mood: "happy",
+                    borderClass: "border-accent-green",
+                    text: "\"Perfect! a + b adds both parameters! You're getting it!\"",
+                  },
+                  {
+                    mood: "sad",
+                    borderClass: "border-accent-red",
+                    text: '"Hmm, that\'s not quite right. Try a different block!"',
+                  },
+                ] as { mood: MascotMood; borderClass: string; text: string }[]
+              ).map(({ mood, borderClass, text }) => (
                 <div
                   key={text}
                   className={`flex items-start gap-2 rounded-lg border bg-bubble px-3.5 py-2.5 font-mono text-xs leading-relaxed text-text ${borderClass}`}
                 >
-                  <Bug className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${textClass}`} />
+                  <WormMascot mood={mood} className="mt-0.5 h-4 w-4 shrink-0" />
                   {text}
                 </div>
               ))}

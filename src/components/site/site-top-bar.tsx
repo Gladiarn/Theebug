@@ -1,9 +1,10 @@
 "use client";
 
-import { Bug, Github, Menu, Moon, Sun } from "lucide-react";
+import { Github, Menu, Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "@/lib/theme-context";
 import { AuthWidget } from "./auth-widget";
+import { LogoMark } from "./logo-mark";
 
 export function SiteTopBar({ onMenuClick }: { onMenuClick: () => void }) {
   const { isDark, toggleTheme } = useTheme();
@@ -19,7 +20,7 @@ export function SiteTopBar({ onMenuClick }: { onMenuClick: () => void }) {
       </button>
 
       <Link href="/" className="flex items-center gap-1.5 font-mono text-xs font-bold text-text">
-        <Bug className="h-4 w-4 text-accent" strokeWidth={1.75} />
+        <LogoMark className="h-5 w-5 shrink-0" />
         <span className="hidden sm:inline">Theebug</span>
       </Link>
 

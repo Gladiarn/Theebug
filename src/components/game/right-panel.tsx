@@ -1,19 +1,13 @@
 "use client";
 
 import { useGame, type WormMood } from "@/lib/game-context";
+import { WormMascot } from "./worm-mascot";
 
 const MOOD_ANIM: Record<WormMood, string> = {
   neutral: "",
   happy: "worm-happy",
   sad: "worm-sad",
   celebrating: "worm-celebrating",
-};
-
-const MOOD_FACE: Record<WormMood, string> = {
-  neutral: "🐛",
-  happy: "🐛",
-  sad: "😔",
-  celebrating: "🎉",
 };
 
 const MOOD_BORDER: Record<WormMood, string> = {
@@ -38,8 +32,8 @@ function formatElapsed(totalSeconds: number): string {
 
 function WormCharacter({ mood }: { mood: WormMood }) {
   return (
-    <div className={`inline-block origin-bottom text-[52px] leading-none ${MOOD_ANIM[mood]}`}>
-      {MOOD_FACE[mood]}
+    <div className={`inline-block h-[64px] w-[64px] origin-bottom ${MOOD_ANIM[mood]}`}>
+      <WormMascot mood={mood} className="h-full w-full" />
     </div>
   );
 }
