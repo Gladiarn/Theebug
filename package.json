@@ -6,12 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.2",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
+    "@vercel/analytics": "^2.0.1",
     "lucide-react": "^0.545.0",
     "mongodb": "^6.21.0",
     "next": "16.2.10",
@@ -25,6 +28,7 @@
     "three": "^0.185.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "4.3.2",
     "@types/node": "26.1.1",
     "@types/react": "19.2.17",
@@ -33,6 +37,7 @@
     "eslint": "^9.39.5",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "4.3.2",
-    "typescript": "5.7.2"
+    "typescript": "5.7.2",
+    "vitest": "^4.1.10"
   }
 }

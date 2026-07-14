@@ -1,6 +1,7 @@
 import "server-only";
 
 import clientPromise from "@/lib/mongodb";
+import { pickHigherScoreProgress } from "@/lib/progress-merge";
 import type { ProgressMap, TrackProgress } from "@/lib/progress-store";
 
 interface ProgressDoc extends TrackProgress {
@@ -48,15 +49,14 @@ export async function upsertTrackProgress(userId: string, trackId: string, progr
 }
 
 // Merge a client's localStorage progress into the DB on first sign-in. Per track, keep
-// whichever side has the higher score — never silently regress progress the user already has
-// saved server-side from a previous session.
+// whichever side has the higher score (see pickHigherScoreProgress in progress-merge.ts).
 export async function mergeLocalProgress(userId: string, localProgress: ProgressMap): Promise<void> {
   const collection = await progressCollection();
   const existing = await getUserProgress(userId);
 
   const ops = Object.entries(localProgress).map(([trackId, local]) => {
     const current = existing[trackId];
-    const winner = !current || local.score > current.score ? local : current;
+    const winner = pickHigherScoreProgress(local, current);
     return {
       updateOne: {
         filter: { userId, trackId },

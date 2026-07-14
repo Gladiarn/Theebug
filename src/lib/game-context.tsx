@@ -11,6 +11,7 @@ import {
   setTrackProgress,
   type TrackProgress,
 } from "./progress-store";
+import { calculateLevelScore } from "./scoring";
 import { getLevelIndexById, getTrack, type Level, type Track } from "./tracks";
 
 export type WormMood = "neutral" | "happy" | "sad" | "celebrating";
@@ -78,6 +79,11 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [justCompleted, setJustCompleted] = useState(false);
   const [lastLevelPoints, setLastLevelPoints] = useState(0);
+  // True once the hydration effect below has actually read (or fetched) saved progress for the
+  // current track/auth state. Guards dropBlock so a drop can't race ahead of hydration and save
+  // stale default state (score 0, no completed levels) over real saved progress — see the
+  // hydration effect's comment for why this matters.
+  const [hydrated, setHydrated] = useState(false);
   const levelStartRef = useRef<number | null>(null);
 
   const addLog = useCallback((msg: string) => {
@@ -111,9 +117,11 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
 
   useEffect(() => {
     if (levelComplete || levelStartRef.current === null) return;
-    const start = levelStartRef.current;
     const interval = setInterval(() => {
-      setElapsedSeconds(Math.floor((Date.now() - start) / 1000));
+      // Read the ref fresh on every tick (not a closed-over `const`) so resetLevel()'s
+      // direct ref mutation takes effect immediately, even when it doesn't also change
+      // this effect's own dependencies (e.g. resetting an already-incomplete level).
+      setElapsedSeconds(Math.floor((Date.now() - (levelStartRef.current ?? Date.now())) / 1000));
     }, 1000);
     return () => clearInterval(interval);
   }, [levelKey, levelComplete]);
@@ -123,8 +131,16 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
   // the session are available during SSR — a lazy useState initializer would read real client
   // data while the server rendered empty state, causing a hydration mismatch. The one-frame
   // "flash" of fresh state before this runs is the accepted tradeoff for that.
+  //
+  // `hydrated` guards a real bug this shape invites: score/completedLevels start at their
+  // default 0/[] on every fresh mount, and only get overwritten with the real saved values once
+  // this effect runs. If dropBlock completes a level before that happens (confirmed via a fast
+  // E2E test — a human wouldn't normally hit this, but nothing stopped it), it saves
+  // `nextScore = 0 + levelScore` and `nextCompleted = [thisLevel]`, silently overwriting any
+  // progress from previous levels/sessions. dropBlock checks `hydrated` before doing anything.
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
+    setHydrated(false);
     if (sessionStatus === "loading") return;
 
     if (isSignedIn) {
@@ -137,6 +153,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
             setCompletedLevels(saved.completedLevels);
             if (saved.completedLevels.includes(currentLevel.id)) setLevelComplete(true);
           }
+          setHydrated(true);
         });
       return;
     }
@@ -149,6 +166,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         setLevelComplete(true);
       }
     }
+    setHydrated(true);
     // Only re-hydrate when switching tracks or auth state, not on every level navigation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [track.id, isSignedIn, sessionStatus]);
@@ -187,6 +205,11 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
 
   const dropBlock = useCallback(
     (zoneId: string, code: string) => {
+      // Ignore drops until saved progress has actually loaded — see the hydration effect's
+      // comment for the overwrite bug this prevents. In practice this window is milliseconds,
+      // imperceptible to a real human dragging a block.
+      if (!hydrated) return;
+
       const zone = currentLevel.zones.find((z) => z.id === zoneId);
       if (!zone) return;
 
@@ -201,7 +224,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
       addLog(`[drop] "${code}" → ${zoneId} ${correct ? "✓" : "✗"}`);
 
       if (allCorrect) {
-        const levelScore = Math.max(40, 100 - mistakes * 10);
+        const levelScore = calculateLevelScore(mistakes);
         const nextScore = score + levelScore;
         const nextCompleted = completedLevels.includes(currentLevel.id)
           ? completedLevels
@@ -244,7 +267,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         }, 2200);
       }
     },
-    [currentLevel, currentLevelIndex, zoneFills, score, completedLevels, track, addLog, isSignedIn, mistakes],
+    [currentLevel, currentLevelIndex, zoneFills, score, completedLevels, track, addLog, isSignedIn, mistakes, hydrated],
   );
 
   const nextLevel = useCallback(() => {
