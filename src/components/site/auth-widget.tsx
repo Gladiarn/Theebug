@@ -5,6 +5,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { Skeleton } from "./skeleton";
 
 export function AuthWidget() {
   const { data: session, status } = useSession();
@@ -21,7 +22,7 @@ export function AuthWidget() {
   }, [open]);
 
   if (status === "loading") {
-    return <div className="h-6 w-6 shrink-0 rounded-full border border-border" aria-hidden />;
+    return <Skeleton className="h-6 w-6 shrink-0 rounded-full" />;
   }
 
   if (!session) {

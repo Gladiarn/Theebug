@@ -30,6 +30,15 @@ export const htmlTrack: Track = {
       wormIntro:
         "Hi! I'm Debug the worm! 🐛 HTML pages are built from tags. Which tag makes a big heading, and which one makes a paragraph of text?",
       wormCorrectAll: "A page needs structure, and now yours has it! h1 for the heading, p for the paragraph! 🎉",
+      concept: {
+        summary: "HTML elements are pairs of tags — `<h1>` for the biggest heading, `<p>` for a paragraph.",
+        details: [
+          "Every element normally has an opening tag (`<h1>`) and a matching closing tag (`</h1>`, with a slash) wrapped around its content. Forgetting the closing tag is one of the most common HTML mistakes.",
+          "There are six heading levels, `<h1>` through `<h6>`, in decreasing importance/size — `<h1>` should be used once per page for the main title, not just for \"big text\" styling (that's CSS's job).",
+          "`<p>` marks a block of body text. Browsers add spacing above and below it automatically, which is why stacking multiple `<p>` tags reads as separate paragraphs.",
+        ],
+        example: "<h1>My Page</h1>\n<h2>A Section</h2>\n<p>Some body text goes here.</p>",
+      },
     },
     {
       id: 2,
@@ -52,6 +61,15 @@ export const htmlTrack: Track = {
       wormIntro:
         "Links need an attribute that tells the browser WHERE to go. Which attribute holds the URL? And what should the visible link text say — check the objective!",
       wormCorrectAll: "Perfect! href points the link, and the text between the tags is what users click on! 🔗",
+      concept: {
+        summary: "Attributes add extra information inside an opening tag, like `href` telling `<a>` where to link.",
+        details: [
+          "`<a href=\"https://example.com\">Visit Example</a>` — the `<a>` tag makes a clickable link, `href` (\"hypertext reference\") is the attribute holding the destination URL, and the text between the tags is what the user actually sees and clicks.",
+          "Attributes always live inside the opening tag as `name=\"value\"` pairs — never in the closing tag, and always with quotes around the value.",
+          "For links leaving your site, it's good practice to add `target=\"_blank\"` (opens in a new tab) along with `rel=\"noopener noreferrer\"` for security — you'll see that exact combo used in this site's own footer.",
+        ],
+        example: '<a href="https://example.com" target="_blank" rel="noopener noreferrer">\n  Opens in a new tab\n</a>',
+      },
     },
     {
       id: 3,
@@ -73,6 +91,15 @@ export const htmlTrack: Track = {
       wormIntro:
         "Images need to know WHERE the picture file is, and need backup text for screen readers if it fails to load. Which attribute is which?",
       wormCorrectAll: "src loads the picture, alt describes it — great for accessibility! You're picture perfect! 🖼️",
+      concept: {
+        summary: "`<img>` is a self-closing tag — `src` says which file to load, `alt` describes it if it can't.",
+        details: [
+          "`<img>` has no separate closing tag (you may also see it written `<img />`) because it has no content between tags to wrap — it just displays a file.",
+          "`src` (\"source\") points to the image file's location. `alt` (\"alternative text\") is what screen readers announce for visually impaired users and what shows up if the image fails to load — it's not optional in professional-quality HTML.",
+          "Skipping `alt` is a common accessibility mistake that also hurts SEO, since search engines read `alt` text to understand what an image shows.",
+        ],
+        example: '<img src="logo.png" alt="Company logo" />',
+      },
     },
     {
       id: 4,
@@ -99,6 +126,15 @@ export const htmlTrack: Track = {
       wormIntro:
         "Bulleted lists wrap everything in one tag, with each item in its own tag inside. Which outer tag makes it 'unordered' (bullets, not numbers)?",
       wormCorrectAll: "ul wraps the whole list, li marks each item — same tag reused for both bullets! 🍎🍌",
+      concept: {
+        summary: "`<ul>` makes a bulleted list, `<ol>` makes a numbered one — both hold `<li>` items inside.",
+        details: [
+          "`<ul>` (\"unordered list\") wraps the whole list and gives each item a bullet by default. `<li>` (\"list item\") marks each individual entry, and you write one `<li>` per item, all nested inside the same `<ul>`.",
+          "Swap `<ul>` for `<ol>` (\"ordered list\") when the sequence matters, like numbered steps — the browser then numbers each `<li>` automatically instead of bulleting it.",
+          "Nesting works too: a `<ul>` can contain another `<ul>` inside one of its `<li>` items, which is how sub-menus and nested outlines are built.",
+        ],
+        example: "<ol>\n  <li>Preheat the oven</li>\n  <li>Mix the batter</li>\n  <li>Bake for 20 minutes</li>\n</ol>",
+      },
     },
     {
       id: 5,
@@ -120,6 +156,15 @@ export const htmlTrack: Track = {
       wormIntro:
         "A div is a generic container — perfect for grouping content you'll style later. Which attribute labels it with a reusable style name?",
       wormCorrectAll: "div groups content, class gives it a name CSS can target — you'll use this combo constantly! 📦",
+      concept: {
+        summary: "`<div>` is a generic box for grouping content; `class` names it so CSS (or JavaScript) can target it.",
+        details: [
+          "`<div>` carries no meaning of its own — no heading, no link, nothing — it's purely a container for grouping other elements together so you can style or position them as a unit.",
+          "`class=\"card\"` doesn't do anything by itself; it's a label. A CSS rule like `.card { border-radius: 8px; }` (note the leading dot) then targets every element with that class, however many there are.",
+          "The same class can be reused on many elements at once (unlike `id`, which is meant to be unique per page), which is exactly why `class` is the standard way to style repeated components like cards.",
+        ],
+        example: '<div class="card">\n  <p>Reusable across the whole page.</p>\n</div>',
+      },
     },
   ],
 };

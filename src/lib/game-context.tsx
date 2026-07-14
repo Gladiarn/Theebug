@@ -33,10 +33,13 @@ interface GameContextValue {
   levelComplete: boolean;
   mistakes: number;
   elapsedSeconds: number;
+  justCompleted: boolean;
+  lastLevelPoints: number;
   dropBlock: (zoneId: string, code: string) => void;
   nextLevel: () => void;
   resetLevel: () => void;
   goToLevel: (index: number) => void;
+  dismissReward: () => void;
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -73,6 +76,8 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
   const [levelComplete, setLevelComplete] = useState(false);
   const [mistakes, setMistakes] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [justCompleted, setJustCompleted] = useState(false);
+  const [lastLevelPoints, setLastLevelPoints] = useState(0);
   const levelStartRef = useRef<number | null>(null);
 
   const addLog = useCallback((msg: string) => {
@@ -93,6 +98,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
     setLevelComplete(completedLevels.includes(currentLevel.id));
     setMistakes(0);
     setElapsedSeconds(0);
+    setJustCompleted(false);
     addLog(`[system] Level ${currentLevelIndex + 1}: ${currentLevel.title}`);
   }
 
@@ -207,6 +213,8 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         setScore(nextScore);
         addLog(`[system] Level ${currentLevel.id} complete! +${levelScore} points`);
         setCompletedLevels(nextCompleted);
+        setLastLevelPoints(levelScore);
+        setJustCompleted(true);
         const progress: TrackProgress = {
           completedLevels: nextCompleted,
           score: nextScore,
@@ -253,9 +261,14 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
     setLevelComplete(false);
     setMistakes(0);
     setElapsedSeconds(0);
+    setJustCompleted(false);
     levelStartRef.current = Date.now();
     addLog("[system] Level reset.");
   }, [currentLevel, addLog]);
+
+  const dismissReward = useCallback(() => {
+    setJustCompleted(false);
+  }, []);
 
   const goToLevel = useCallback(
     (index: number) => {
@@ -280,10 +293,13 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         levelComplete,
         mistakes,
         elapsedSeconds,
+        justCompleted,
+        lastLevelPoints,
         dropBlock,
         nextLevel,
         resetLevel,
         goToLevel,
+        dismissReward,
       }}
     >
       {children}

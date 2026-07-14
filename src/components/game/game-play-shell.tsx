@@ -1,5 +1,6 @@
 import { BottomPanel } from "./bottom-panel";
 import { EditorArea } from "./editor-area";
+import { LevelCompleteModal } from "./level-complete-modal";
 import { RightPanel } from "./right-panel";
 import { Sidebar } from "./sidebar";
 import { Terminal } from "./terminal";
@@ -14,6 +15,7 @@ export function GamePlayShell() {
         <BottomPanel />
       </div>
       <RightPanel />
+      <LevelCompleteModal />
     </div>
   );
 }

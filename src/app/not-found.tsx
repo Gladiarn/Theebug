@@ -1,10 +1,11 @@
-import { ArrowLeft, Frown } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { WormMascot } from "@/components/game/worm-mascot";
 
 export default function NotFound() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-bg px-6 py-20 text-center text-text">
-      <Frown className="h-16 w-16 text-accent-red" strokeWidth={1.5} />
+      <WormMascot mood="sad" className="h-20 w-20" />
       <h1 className="m-0 text-2xl font-bold">Debug couldn&apos;t find that page</h1>
       <p className="max-w-[420px] text-sm leading-relaxed text-text-muted">
         The page you&apos;re looking for doesn&apos;t exist, or the level ID isn&apos;t valid. Let&apos;s get you

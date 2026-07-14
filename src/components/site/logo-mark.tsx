@@ -1,0 +1,20 @@
+export function LogoMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" fill="none" className={className} aria-hidden>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="#1e1e1e" stroke="#4ec9b0" strokeOpacity="0.25" strokeWidth="1.5" />
+      <path d="M40 21 C 43 15, 48 13, 51 15" stroke="#4ec9b0" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+      <circle cx="51.4" cy="14.6" r="2" fill="#4ec9b0" />
+      <path d="M35 17 C 35 10, 38 6, 43 5" stroke="#4ec9b0" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+      <circle cx="43.4" cy="4.8" r="2" fill="#4ec9b0" />
+      <circle cx="20" cy="46" r="10.5" fill="#4ec9b0" />
+      <circle cx="33.5" cy="37" r="9" fill="#4ec9b0" />
+      <circle cx="43.5" cy="24.5" r="8" fill="#4ec9b0" />
+      <path d="M14 51 L 8 55" stroke="#4ec9b0" strokeWidth="2" strokeLinecap="round" />
+      <path d="M17 54 L 12 59" stroke="#4ec9b0" strokeWidth="2" strokeLinecap="round" />
+      <path d="M27 43 L 23 49" stroke="#4ec9b0" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="40.5" cy="22" r="1.9" fill="#1e1e1e" />
+      <circle cx="46.5" cy="23.5" r="1.9" fill="#1e1e1e" />
+      <path d="M41.5 27.5 Q 44 29.5, 46.5 27.5" stroke="#1e1e1e" strokeWidth="1.6" strokeLinecap="round" fill="none" />
+    </svg>
+  );
+}

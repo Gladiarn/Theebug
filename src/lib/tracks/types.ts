@@ -8,6 +8,12 @@ export interface ZoneDef {
   answer: string;
 }
 
+export interface LevelConcept {
+  summary: string;
+  details: string[];
+  example?: string;
+}
+
 export interface Level {
   id: number;
   title: string;
@@ -19,6 +25,7 @@ export interface Level {
   blocks: Block[];
   wormIntro: string;
   wormCorrectAll: string;
+  concept: LevelConcept;
 }
 
 export interface Track {
