@@ -1,12 +1,15 @@
 import type { CSSProperties } from "react";
 import type { IconType } from "react-icons";
-import { SiCss, SiHtml5, SiJavascript, SiPython } from "react-icons/si";
+import { SiCss, SiHtml5, SiJavascript, SiMongodb, SiNodedotjs, SiPython, SiReact } from "react-icons/si";
 
 const TRACK_ICONS: Record<string, IconType> = {
   javascript: SiJavascript,
   python: SiPython,
   html: SiHtml5,
   css: SiCss,
+  react: SiReact,
+  nodejs: SiNodedotjs,
+  mongodb: SiMongodb,
 };
 
 export function TrackIcon({ trackId, className, style }: { trackId: string; className?: string; style?: CSSProperties }) {

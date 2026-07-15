@@ -238,12 +238,15 @@ Replaced emoji in three places:
 ## Known placeholders / TODO
 
 - `@react-three/drei` is an unused dependency — remove next time deps are touched.
-- HTML track has 5 levels, CSS has 6, JS/Python have 5 each — fine as a starter set, room to grow.
-- Python/HTML/CSS docs are still baseline depth — only JavaScript has gotten the full
-  professional rewrite so far (see "Content depth + more tracks" below). Apply the same bar to
-  the others when there's time.
-- C#, PHP, and framework tracks (React, ...) are planned but not started — Python was built
-  first to establish the content-quality bar.
+- HTML track has 5 levels, CSS has 6, JavaScript has 11, Python has 9, React has 6 — see
+  `upgrade-plan.md` for the difficulty-tier breakdown of each.
+- **Update**: all five tracks' reference docs are now at the same full professional depth
+  (10-12 sections each, multiple paragraphs + labeled examples + a tip per section) —
+  JavaScript and Python were done first; HTML, CSS, and React were brought up to the same bar in
+  a later pass (see `upgrade-plan.md` items #5 and #2). No track is still at "baseline depth."
+- **Update**: React is now a shipped track (see `upgrade-plan.md` item #2) — the first framework
+  track, picked as the natural next step after JS. C#, PHP, Node.js, and a database track (e.g.
+  MongoDB) remain planned but not started; Node.js is the decided next pick.
 
 ## Accounts + database (built)
 
@@ -1003,13 +1006,14 @@ gap that prompted Phase 8:
 2. **Track-completion reward**, distinct from the per-level one — a bigger celebration screen
    when the *last* level of a track finishes (currently it's the same modal as any other level).
    Natural place to show total track time/score and tease the next track.
-3. **HTML/CSS docs depth** — the one piece of Phase 7 explicitly deferred; JavaScript is the
-   only track with the full 10+ section professional rewrite so far.
+3. ~~**HTML/CSS docs depth**~~ — **Done**, see `upgrade-plan.md` item #5 and "Known placeholders"
+   above — all five tracks are now at the same full-depth bar, not just JavaScript.
 4. **Hint system with a cost** — a "Hint" button that reveals which block is correct but costs
    points (e.g. -20), giving struggling learners a way forward without breaking the
    mistake-penalty design already in place.
-5. **C#, PHP tracks**, then framework tracks (React, ...) — already called out as planned in
-   "Known placeholders" above; Python established the content-quality bar to match.
+5. ~~**Framework tracks (React, ...)**~~ — **React done**, see `upgrade-plan.md` item #2.
+   **C#, PHP tracks, then Node.js and a database track** remain planned but not started; Node.js
+   is the decided next pick since it pairs directly with the JS already taught.
 6. **Daily streak tracking** — would need one new persisted field (`lastPlayedDate` or similar)
    on the user's progress document; the only roadmap item here that isn't purely additive to
    existing data.

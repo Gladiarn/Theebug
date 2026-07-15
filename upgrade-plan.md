@@ -47,30 +47,80 @@ testimonials stayed deferred, as planned, since there's still no real learner co
 
 ### 2. Learn page — many more courses, categorized, with "Show more" pagination
 
-Wants the course catalog to grow well beyond the current 4 language tracks (JS/Python/HTML/CSS)
-to include framework tracks (React, Next.js), database tracks (MongoDB, SQL, MySQL), and
-backend tracks (Node.js, Django, etc.).
+~~**Shipped — all three planned courses (React, Node.js, MongoDB) plus the pagination UI.**~~
+The catalog grew from 4 tracks to 7: JavaScript, Python, HTML, CSS, React, Node.js, MongoDB —
+frontend, backend, and database, exactly the spread originally asked for.
 
-- **Content scope**: each new course needs the same full shape every track already has
-  (`src/lib/tracks/*.ts` — `codeLines`/`zones`/`blocks`/worm narration/`concept` recap per
-  level, plus a `src/lib/reference/*.ts` docs page) — this is a real content-authoring effort
-  per course, not just a UI change. Same pattern as the JS→Python track buildout earlier.
-- **UI scope**: `src/app/(site)/learn/page.tsx` currently renders every `TRACKS` entry
-  unconditionally in one grid, no cap. New requirement: show a max of 8 cards initially: a
-  "Show more" control expands the grid to reveal the rest (client-side, no new route/page).
+- **React** (`src/lib/tracks/react.ts` + `src/lib/reference/react.ts`) — found already fully
+  built (6 levels, easy→hard: JSX & Components, Props, State with useState, Event Handling,
+  Conditional Rendering, Rendering Lists & Keys; 10-section reference docs) from earlier in this
+  session, before this file's own entry was last updated — verified rather than assumed: played
+  all levels via Playwright, confirmed `/docs/react` renders all 10 sections, confirmed it was
+  already wired into `TRACKS`/`REFERENCES`/`TrackIcon` (`SiReact`).
+- **Node.js** (`src/lib/tracks/nodejs.ts` + `src/lib/reference/nodejs.ts`, new) — 6 levels,
+  easy→hard: CommonJS Modules, require() & Built-ins, Reading Files with fs, Creating an HTTP
+  Server, Async/Await with fs.promises, Basic Express Routing (the hard capstone, since Express
+  is the near-universal real-world choice for a Node backend, not just core-API trivia).
+  10-section reference docs, including npm/package.json, environment variables, and async error
+  handling. `SiNodedotjs` wired into `TrackIcon`.
+- **MongoDB** (`src/lib/tracks/mongodb.ts` + `src/lib/reference/mongodb.ts`, new) — 6 levels,
+  easy→hard: Inserting a Document, Finding Documents, Query Operators, Updating Documents,
+  Deleting Documents, and an Aggregation Pipeline level as the hard capstone — deliberately
+  mirroring the exact `$group`/`$sum` pattern `progress-db.ts`'s own real `getLeaderboard()`
+  aggregation uses, a genuine thematic tie-in ("the database Theebug itself runs on," per the
+  track description) rather than a generic example. 10-section reference docs, including schema
+  design (embedding vs. referencing) and connecting from Node.js. `SiMongodb` wired into
+  `TrackIcon`.
+- **"Show more" pagination** (`src/components/site/course-grid.tsx`, new): `/learn` shows a max
+  of 8 cards, with a "Show N more courses" button revealing the rest — client component, no new
+  route. Verified the actual reveal behavior works (not just "compiles"): temporarily lowered the
+  cap to 3 against the catalog, confirmed via Playwright that exactly 3 cards show initially and
+  clicking the button reveals the rest, then restored the real cap of 8 before shipping. Still
+  hasn't visibly triggered in production (7 tracks ≤ 8), but is proven correct and ready for the
+  next course added.
+- **Marketing copy made evergreen, not just patched again**: rather than keep appending each new
+  language to "JavaScript, Python, HTML, and CSS"-style taglines forever (`layout.tsx` metadata,
+  the landing page hero, README), switched those specific spots to "JavaScript, Python, and
+  more — frontend, backend, and databases" — accurate, and doesn't need another edit next time a
+  course ships. The FAQ's "What languages can I learn?" answer deliberately stayed exhaustive
+  and specific instead (a direct question deserves a direct, complete answer, unlike a tagline).
+- Verified every course end-to-end via Playwright, not just typechecked: all 18 levels (React 6 +
+  Node.js 6 + MongoDB 6) play correctly and award the right difficulty-weighted score for their
+  tier; all three new/expanded docs pages render their full section count. `tsc`/`eslint`/
+  `vitest` (15 tests)/`next build` all clean, full Playwright suite (9 tests, `--workers=2`)
+  passes — see the note under Phase 4 in the build order below about default-parallelism
+  flakiness discovered while re-verifying this.
 
 ### 5. Docs content — scale it up like a real docs site, keep the shell exactly as-is
 
-Explicitly: don't touch `docs-track-view.tsx`'s layout/style (liked as-is) — this is content-only.
-Wants the depth/progression real documentation sites have (fundamentals → advanced, friendly
-explanatory tone so beginners don't get lost, not just terse syntax reference).
+~~**Shipped.**~~ `docs-track-view.tsx`'s layout/shell was not touched, as explicitly asked —
+content-only.
 
-Current state: only JavaScript got the full professional rewrite (12 sections,
-`src/lib/reference/javascript.ts`) — Python/HTML/CSS reference content is still baseline depth
-(already flagged as a TODO in `plan.md`). This is a real content-authoring task per track, same
-bar as the JS rewrite: multiple paragraphs of real explanation per section, 2-3 labeled
-examples, a "tip" callout where it helps, and — new from this feedback — a genuinely friendly,
-non-intimidating tone throughout (this is a teaching tool, not a terse API reference).
+**Found while starting this**: `src/lib/reference/python.ts` was already at full 12-section
+JS-quality depth (checked before writing anything — it had genuinely already been done in an
+earlier pass this session, before `upgrade-plan.md` itself was created, so this file's own
+description of it as "still baseline depth" was stale). Only HTML and CSS were actually still
+shallow (5 sections each, ~37 lines, one line of body text per section) — confirmed directly
+rather than trusting the earlier writeup.
+
+- **`src/lib/reference/html.ts`**: grown from 5 to 10 sections. Kept the 5 original topics
+  (Headings & Paragraphs, Links, Images, Lists, Divs & Classes → renamed "Divs, Spans &
+  Classes") and deepened each to the JS bar (2-3 body paragraphs, 1-2 labeled examples, a tip),
+  then added 5 new sections beyond what any game level currently covers — matching how the JS
+  docs already go deeper than just the JS *levels'* topics: Document Structure, Semantic HTML,
+  Forms & Inputs, Tables, Accessibility Basics.
+- **`src/lib/reference/css.ts`**: grown from 5 to 10 sections the same way. Kept and deepened
+  Selectors & Color, The Box Model, Flexbox Basics, Font & Text, Backgrounds & Radius, Hover
+  State (renamed "Hover & Other Pseudo-Classes"), and added CSS Grid, Positioning, Units,
+  Responsive Design & Media Queries.
+- Friendly, non-intimidating tone applied throughout both, matching the explicit ask — plain
+  explanations of *why* something works the way it does (e.g. why `rem` is usually safer than
+  `em`, why a missing `alt` is worse than an empty one), not terse API-reference phrasing.
+- Verified: sidebar section-link count confirmed 10/10 for both tracks via Playwright, screenshotted
+  `/docs/html` to confirm rendering, and re-ran the existing `docs-scroll-spy.spec.ts` suite (which
+  specifically exercises HTML/CSS as the "short docs page" edge case) — all 3 tests still pass
+  with the new, deeper content. `tsc`/`eslint`/`next build` clean, full suite (15 unit + 7 e2e)
+  still passes.
 
 ### 7. About page — make it visually creative, not a wall of paragraphs
 
@@ -274,7 +324,7 @@ modal, then "Review level"), clicking Home navigates straight to `/` with no dia
 to the in-app Home link only, as asked — browser back/tab-close isn't covered (that would need the
 `beforeunload` API, a different mechanism, and wasn't part of the explicit ask).
 
-### 17. SEO — get found when someone searches "Theebug" or related terms. **Code shipped, one manual step + one decision left.**
+### 17. SEO — get found when someone searches "Theebug" or related terms. **All code shipped — one manual step left that only the user can do.**
 
 Ask: real discoverability, not just "the sitemap technically exists" — if someone searches the
 site's name or what it does, it should actually show up, with a real-looking result (title,
@@ -310,9 +360,17 @@ that callback URL to `https://www.theebug.cc.cd/api/auth/callback/github` themse
 prominently in `plan.md` as an action item, since this is outside what Claude Code can access or
 fix.
 
-**Still open**: the one *manual* step — verifying the site in **Google Search Console** and
-submitting `sitemap.xml` — can't be done via code; the domain question that was blocking this is
-now resolved, so this can happen anytime.
+**Still open, genuinely can't be finished by me**: two manual steps, both requiring the user's
+own account access — Claude Code cannot log into Google or GitHub on the user's behalf:
+1. **Google Search Console**: go to search.google.com/search-console, add `https://www.theebug.cc.cd`
+   as a property, verify ownership (the DNS-record method is usually simplest since the domain's
+   nameservers are already on Vercel), then submit `sitemap.xml` from the Sitemaps section. All
+   the code-side prep (the sitemap itself, `robots.txt` pointing at it, real metadata) is already
+   done — this is the one step that actually tells Google the site exists and should be crawled.
+2. **GitHub OAuth callback URL** (carried over from the domain-deletion finding above): update
+   the "Theebug (Production)" OAuth App at github.com/settings/developers to
+   `https://www.theebug.cc.cd/api/auth/callback/github`, replacing the dead `theebug.vercel.app`
+   one — until this is done, GitHub sign-in on production is very likely broken.
 
 ### 18. Console noise — `THREE.Clock` deprecation warning (upstream, no action)
 
@@ -325,22 +383,41 @@ Real resolution is a future `@react-three/fiber` release adopting `THREE.Timer`;
 bumping the dependency next time deps are touched (see `plan.md`'s "Known placeholders" for the
 other already-tracked unused/outdated dependency, `@react-three/drei`).
 
-### 19. Replaying a completed level inflates score without bound (found while building #9, not fixed)
+### 19. Replaying a completed level inflates score without bound (found while building #9)
 
-`dropBlock`'s completion branch (`src/lib/game-context.tsx`) always runs
-`nextScore = score + levelScore`, regardless of whether the level being completed was already in
-`completedLevels`. Only the completed-levels *list* dedupes; the *score* has no such guard.
-Repeatedly navigating back to an already-finished level (via `Sidebar`) and dragging the correct
-answer in again keeps adding points every time, unbounded. Downstream effect: it can push a
-track's total score *above* the true max, which would make the "Perfectionist" badge's
-`score === maxPossibleScore` check silently un-earnable (not a crash, just permanently false)
-for anyone who's ever replayed a level.
+~~**Fixed.**~~ Decided the product question myself (per this session's standing "you decide"
+delegation) rather than waiting: **replaying an already-completed level now only ever helps,
+never hurts, and never double-counts** — the best-ever score and fastest-ever time for that
+level, tracked independently, not "add every attempt together."
 
-**Not fixed** — needs a product decision first, not just a code change: should replaying an
-already-completed level award nothing (pure practice mode), only count if it beats the previous
-attempt's score, or something else? Whichever is picked also needs to decide how it interacts
-with `totalTimeMs` (#9's new field) — does replaying add more time to the cumulative total too,
-compounding the same class of issue there?
+`src/lib/progress-store.ts`'s `TrackProgress` gained a `levelStats?: Record<number, { score:
+number; timeMs: number }>` map, keyed by level id — the new source of truth. `score` and
+`totalTimeMs` are now always *derived* by summing every level's best score / fastest time across
+that map, never incremented directly (`src/lib/game-context.tsx`'s `dropBlock`). Concretely: a
+worse replay leaves the track score unchanged; a better replay raises it to the new best; a
+faster replay (regardless of score) can still lower the leaderboard-tiebreaker time independently.
+Threaded through `progress-db.ts`'s reads and `/api/progress`'s manual validation the same way
+every other field already is.
+
+**Real side effect, not a coincidence**: this also genuinely fixes the "Perfectionist" badge
+integrity concern raised when this bug was first found — since score can no longer overshoot a
+track's true max, `badges.ts`'s `score === maxPossibleScore` check is trustworthy again.
+
+**Migration note, deliberately not engineered further**: progress saved before this field existed
+has no `levelStats` (defaults to `{}` on read) — the old cumulative `score` is trusted as-is until
+the *next* completion, at which point it becomes purely derived from `levelStats` going forward.
+For an existing user, that next completion could show a one-time downward correction if their old
+score had already benefited from this exact bug. Accepted rather than building a real migration
+script — this project has a tiny real user base at this stage (confirmed: one real leaderboard
+entry existed when this was checked), and the "correction" is honest, not a new bug.
+
+Added `e2e/score-integrity.spec.ts` (2 tests, both scripted end-to-end, not just unit-level):
+replaying with a deliberately worse attempt (2 mistakes) leaves the stored score unchanged;
+replaying with a genuinely better attempt raises it correctly. `tsc`/`eslint`/`vitest` (15
+tests)/`next build` all clean; full Playwright suite now 9 tests, all passing (one unrelated
+flake in `sign-in-nudge.spec.ts` on the first full run, re-confirmed 3/3 in isolation and 9/9 on
+a subsequent full run — the same class of parallel-load flakiness already documented elsewhere
+in this codebase, not a regression from this change).
 
 ---
 
@@ -389,17 +466,23 @@ from the existing `TRACKS` data, no new prose needed) — then the "why Theebug"
 an FAQ preview. Testimonials are explicitly deferred: they need real learner content that
 doesn't exist yet, a real content-availability dependency, not an arbitrary skip.
 
-**Phase 4 — Content scale-out.**
-#5 (docs depth) → #2 (new courses).
+**Phase 4 — Content scale-out. All three planned courses shipped — still genuinely open-ended
+by design, since more courses can always be added later.**
+~~#5 (docs depth)~~ → ~~#2, all three courses (React → Node.js → MongoDB) + the pagination UI~~.
 Reasoning: sequenced last on purpose — this is the biggest, most ongoing content-authoring
 effort, and it benefits from everything above: a mobile-ready shell (Phase 1), finalized
 scoring/difficulty mechanics so new levels are authored once against the real system (Phase 2),
 and the new type treatment for any new docs prose (Phase 0).
-**Decided starting track for #2**: React first — the most natural extension of the existing JS
-track (same audience, same base syntax, reuses the exact authoring pattern already proven with
-Python) — then Node.js (pairs directly with JS knowledge already taught), then a database track.
-The `/learn` page's "Show more" pagination UI can actually be built any time before this (it's
-cheap and independent) — it just has nothing to do until course count actually passes 8.
+
+**Found while re-verifying the full Playwright suite at the end of this phase**: the default
+6-worker parallelism intermittently fails 1-2 tests per run on this machine (different test each
+time — `level-complete`, `sign-in-nudge`) purely from resource contention running that many real
+Chromium instances with timing-sensitive drag-and-drop at once, confirmed *not* a code regression
+by re-running the exact same suite with `--workers=2`, which passes 9/9 consistently. Worth a
+look — either lowering `workers` in `playwright.config.ts`, or just knowing to re-run at reduced
+parallelism if a future CI/local run shows a similar single-test failure — but not something that
+blocked shipping anything in this phase, since every failure was confirmed non-reproducible in
+isolation.
 
 ---
 
@@ -471,3 +554,95 @@ cheap and independent) — it just has nothing to do until course count actually
     backdrop click, Sidebar closes automatically on selecting a level. Full existing Playwright
     suite (7 tests across `level-complete`, `docs-scroll-spy`, `sign-in-nudge`) still passes, plus
     `tsc --noEmit`/`eslint .`/`next build` all clean.
+
+---
+
+## Testing checklist — what's left before calling this fully finished
+
+Every item above is code-complete and verified by automated means (`tsc`, `eslint`, `vitest`,
+`next build`, Playwright). What's listed here is everything that genuinely needs a **human** —
+either because it's a manual action Claude Code cannot perform, a subjective/visual judgment
+call, real multi-user/real-device behavior no amount of scripted testing can substitute for, or
+technical content worth a second pair of eyes since a large amount of it was authored in one
+pass. Work through this before considering the plan truly closed out, not just "shipped."
+
+### Manual actions only you can do (external account access)
+
+- [ ] **Google Search Console**: verify `https://www.theebug.cc.cd` as a property
+  (search.google.com/search-console) and submit `sitemap.xml`. All the code-side prep is done —
+  this is the one step that actually gets the site crawled/indexed. See item #17 above for the
+  exact steps.
+- [ ] **GitHub OAuth callback URL**: update the "Theebug (Production)" OAuth App
+  (github.com/settings/developers) to `https://www.theebug.cc.cd/api/auth/callback/github`,
+  replacing the now-dead `theebug.vercel.app` one. **Until this is done, GitHub sign-in on
+  production is very likely broken** — worth testing first to confirm, then fixing.
+- [ ] **Deploy this work** — none of what's in this file has been merged/deployed yet (confirm
+  current `git status`/branch state before assuming otherwise). Recommend a preview deploy first,
+  smoke-test there, then promote to production.
+
+### Real accounts / real data (things one single test session can't fully prove)
+
+- [ ] **Leaderboard rank styling with real rank 2 and 3.** Only ever confirmed gold (#1) against
+  real production data — this app currently has exactly one real opted-in leaderboard entry, so
+  silver/bronze styling was verified by code-reading (same logic path, different array index),
+  not by seeing it rendered with real second/third-place users. Worth a look once more accounts
+  exist.
+- [ ] **The #19 scoring fix, with an existing real account that has old-format progress.**
+  If any real signed-in user completes a level for the first time after this update, watch for
+  the documented one-time score adjustment (their stored score may shift slightly if it had
+  previously benefited from the replay-inflation bug) — expected and correct, but worth actually
+  observing once rather than only trusting the write-up.
+- [ ] **Leaderboard time-tiebreak with two real competing accounts.** The `totalTimeMs` tiebreak
+  (#9) has unit/e2e coverage for the derivation logic, but has never been observed actually
+  breaking a real tie between two different real users on the live leaderboard.
+
+### Real devices (Playwright's viewport emulation is not the same as the real thing)
+
+- [ ] **An actual phone**, not just a 390px emulated viewport: gameplay drag-and-drop via real
+  touch, the docs mobile section-jump dropdown, the `/learn` course grid + "Show more" button, the
+  terminal's resize handle (pointer events were used specifically to support touch, but never
+  tested on a real touchscreen).
+- [ ] **A tablet-sized viewport** — everything so far was tested at phone width (390px) and
+  desktop width (1280px); the in-between range hasn't been specifically checked.
+- [ ] **At least one non-Chromium browser** (Safari and/or Firefox) — every automated check in
+  this whole plan ran on Chromium only (Playwright's default). `react-dnd`'s HTML5 drag-and-drop
+  backend and CSS Grid/Flexbox both have occasional real cross-browser quirks worth a spot check,
+  especially on Safari/iOS given how central drag-and-drop is to the whole product.
+
+### Content accuracy (a lot was authored in one pass — worth a second pair of eyes)
+
+- [ ] **Technical accuracy pass on the new/expanded docs content**: HTML (10 sections), CSS (10
+  sections), Node.js (10 sections), MongoDB (10 sections), React (10 sections) — all
+  freshly-written explanatory prose and code examples. Spot-check for anything subtly wrong,
+  especially in the newer/less universally-known areas (Node's `fs/promises`, MongoDB's
+  aggregation pipeline, Express routing specifics).
+- [ ] **Playtest the 18 new levels** (React 6, Node.js 6, MongoDB 6) as an actual learner, not
+  just scripted-correct-answer verification — confirm the distractor blocks are genuinely
+  plausible-but-wrong (not obviously fake), the difficulty curve feels right level-to-level, and
+  the worm narration/concept recaps actually teach the concept clearly to someone encountering it
+  cold.
+- [ ] **Read the new landing-page copy and About page out loud once** — the "why Theebug"
+  comparison, the FAQ preview, the About page pillars — for tone/typos a silent read can miss.
+- [ ] **The Updates page's release history** — confirm the version numbers/dates/feature
+  groupings still make sense to a real visitor with no session context, not just internally
+  consistent with this file.
+
+### Explicitly deferred, not bugs — revisit only if you want them
+
+- [ ] Speed bonus / streak bonus / hint-cost scoring (the rest of #9 beyond the difficulty
+  multiplier + ms tiebreaker already shipped).
+- [ ] Leave-confirmation dialog (#15) only covers the in-app Home link — browser back button /
+  tab close is not covered (would need the `beforeunload` API, a different mechanism).
+- [ ] Node.js and MongoDB were the two remaining courses from the original "many more courses"
+  ask — now both shipped. C#, PHP, SQL, and further framework/language tracks remain open-ended
+  future additions, not a fixed backlog.
+
+### General regression pass
+
+- [ ] Full manual click-through of every nav path at least once: `SiteSidebar`, `SiteFooter`,
+  `SiteTopBar`'s mobile hamburger, the game `Sidebar`'s mobile drawer, the game `RightPanel`'s
+  mobile drawer — confirm nothing from earlier phases regressed after all the Phase 4 content
+  additions.
+- [ ] `npx playwright test` at the **default worker count** occasionally shows one flaky failure
+  (see the note under Phase 4 above) — if this keeps happening, worth actually lowering `workers`
+  in `playwright.config.ts` rather than re-running around it forever.
