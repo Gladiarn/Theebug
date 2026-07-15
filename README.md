@@ -25,7 +25,7 @@ instant feedback on every choice. Wrong guesses cost nothing but a second try.
 
 ## Features
 
-- 🧩 **Drag-and-drop levels** across JavaScript, Python, HTML, and CSS — real code with
+- 🧩 **Drag-and-drop levels** across JavaScript, Python, HTML, CSS, and React — real code with
   fill-in-the-blank zones, distractor blocks, and instant correctness feedback
 - 📊 **Difficulty tiers** (Beginner / Intermediate / Advanced) per track, so lessons scale from
   first-timer to genuinely challenging
@@ -96,7 +96,7 @@ src/
     game/         The actual drag-and-drop game UI
     site/         Landing page, docs, nav, footer
   lib/
-    tracks/       Level content per language (JS, Python, HTML, CSS)
+    tracks/       Level content per language (JS, Python, HTML, CSS, React)
     reference/    Docs/reference content per language
 e2e/              Playwright end-to-end tests
 ```

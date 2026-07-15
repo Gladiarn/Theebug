@@ -47,30 +47,63 @@ testimonials stayed deferred, as planned, since there's still no real learner co
 
 ### 2. Learn page — many more courses, categorized, with "Show more" pagination
 
-Wants the course catalog to grow well beyond the current 4 language tracks (JS/Python/HTML/CSS)
-to include framework tracks (React, Next.js), database tracks (MongoDB, SQL, MySQL), and
-backend tracks (Node.js, Django, etc.).
+~~**Shipped, first course** (React, per the decided order) + **the pagination UI, built and
+verified for real** even though today's 5 tracks don't yet exceed the cap.~~ Node.js and a
+database track remain for a future pass — this item stays open for those, not closed outright.
 
-- **Content scope**: each new course needs the same full shape every track already has
-  (`src/lib/tracks/*.ts` — `codeLines`/`zones`/`blocks`/worm narration/`concept` recap per
-  level, plus a `src/lib/reference/*.ts` docs page) — this is a real content-authoring effort
-  per course, not just a UI change. Same pattern as the JS→Python track buildout earlier.
-- **UI scope**: `src/app/(site)/learn/page.tsx` currently renders every `TRACKS` entry
-  unconditionally in one grid, no cap. New requirement: show a max of 8 cards initially: a
-  "Show more" control expands the grid to reveal the rest (client-side, no new route/page).
+- **New course: React** (`src/lib/tracks/react.ts` + `src/lib/reference/react.ts`) — found
+  already fully built (6 levels, easy→hard progression: JSX & Components, Props, State with
+  useState, Event Handling, Conditional Rendering, Rendering Lists & Keys; 10-section reference
+  docs at the same depth as JS/Python) from earlier in this session, before this file's own
+  entry was last updated — verified rather than assumed: played all levels via Playwright
+  (correct completion + correct difficulty-weighted score, `+100`/`+150`/`+200` matching each
+  level's easy/medium/hard tier), confirmed `/docs/react` renders all 10 sections, confirmed
+  `react` was already wired into `TRACKS`/`REFERENCES`/`TrackIcon` (`SiReact`). Fixed the
+  remaining loose ends: the landing page's hero copy still said "Real JavaScript, Python, HTML,
+  and CSS" with no mention of React (layout.tsx metadata, `/learn`'s metadata, and the FAQ answer
+  had all already been updated, just not this one spot).
+- **"Show more" pagination** (`src/components/site/course-grid.tsx`, new): `/learn` now shows a
+  max of 8 cards, with a "Show N more courses" button revealing the rest — client component,
+  no new route. Verified the actual reveal behavior works (not just "compiles"): temporarily
+  lowered the cap to 3 against the real 5-track catalog, confirmed via Playwright that exactly 3
+  cards show initially and clicking the button reveals all 5, then restored the real cap of 8
+  before shipping.
+- Verified end-to-end: `tsc`/`eslint`/`vitest` (15 tests)/`next build` all clean, full Playwright
+  suite (7 tests) still passes.
+- **Still open, explicitly not done this pass**: Node.js (backend) and a database track (MongoDB,
+  per the decided order) — full content-authoring efforts each, same scope as the React course
+  above, left for whenever this item gets picked up again.
 
 ### 5. Docs content — scale it up like a real docs site, keep the shell exactly as-is
 
-Explicitly: don't touch `docs-track-view.tsx`'s layout/style (liked as-is) — this is content-only.
-Wants the depth/progression real documentation sites have (fundamentals → advanced, friendly
-explanatory tone so beginners don't get lost, not just terse syntax reference).
+~~**Shipped.**~~ `docs-track-view.tsx`'s layout/shell was not touched, as explicitly asked —
+content-only.
 
-Current state: only JavaScript got the full professional rewrite (12 sections,
-`src/lib/reference/javascript.ts`) — Python/HTML/CSS reference content is still baseline depth
-(already flagged as a TODO in `plan.md`). This is a real content-authoring task per track, same
-bar as the JS rewrite: multiple paragraphs of real explanation per section, 2-3 labeled
-examples, a "tip" callout where it helps, and — new from this feedback — a genuinely friendly,
-non-intimidating tone throughout (this is a teaching tool, not a terse API reference).
+**Found while starting this**: `src/lib/reference/python.ts` was already at full 12-section
+JS-quality depth (checked before writing anything — it had genuinely already been done in an
+earlier pass this session, before `upgrade-plan.md` itself was created, so this file's own
+description of it as "still baseline depth" was stale). Only HTML and CSS were actually still
+shallow (5 sections each, ~37 lines, one line of body text per section) — confirmed directly
+rather than trusting the earlier writeup.
+
+- **`src/lib/reference/html.ts`**: grown from 5 to 10 sections. Kept the 5 original topics
+  (Headings & Paragraphs, Links, Images, Lists, Divs & Classes → renamed "Divs, Spans &
+  Classes") and deepened each to the JS bar (2-3 body paragraphs, 1-2 labeled examples, a tip),
+  then added 5 new sections beyond what any game level currently covers — matching how the JS
+  docs already go deeper than just the JS *levels'* topics: Document Structure, Semantic HTML,
+  Forms & Inputs, Tables, Accessibility Basics.
+- **`src/lib/reference/css.ts`**: grown from 5 to 10 sections the same way. Kept and deepened
+  Selectors & Color, The Box Model, Flexbox Basics, Font & Text, Backgrounds & Radius, Hover
+  State (renamed "Hover & Other Pseudo-Classes"), and added CSS Grid, Positioning, Units,
+  Responsive Design & Media Queries.
+- Friendly, non-intimidating tone applied throughout both, matching the explicit ask — plain
+  explanations of *why* something works the way it does (e.g. why `rem` is usually safer than
+  `em`, why a missing `alt` is worse than an empty one), not terse API-reference phrasing.
+- Verified: sidebar section-link count confirmed 10/10 for both tracks via Playwright, screenshotted
+  `/docs/html` to confirm rendering, and re-ran the existing `docs-scroll-spy.spec.ts` suite (which
+  specifically exercises HTML/CSS as the "short docs page" edge case) — all 3 tests still pass
+  with the new, deeper content. `tsc`/`eslint`/`next build` clean, full suite (15 unit + 7 e2e)
+  still passes.
 
 ### 7. About page — make it visually creative, not a wall of paragraphs
 
@@ -389,8 +422,9 @@ from the existing `TRACKS` data, no new prose needed) — then the "why Theebug"
 an FAQ preview. Testimonials are explicitly deferred: they need real learner content that
 doesn't exist yet, a real content-availability dependency, not an arbitrary skip.
 
-**Phase 4 — Content scale-out.**
-#5 (docs depth) → #2 (new courses).
+**Phase 4 — Content scale-out. First slice shipped; genuinely open-ended, not "done."**
+~~#5 (docs depth)~~ → ~~#2, first course (React) + the pagination UI~~ → #2, remaining courses
+(Node.js, then a database track).
 Reasoning: sequenced last on purpose — this is the biggest, most ongoing content-authoring
 effort, and it benefits from everything above: a mobile-ready shell (Phase 1), finalized
 scoring/difficulty mechanics so new levels are authored once against the real system (Phase 2),

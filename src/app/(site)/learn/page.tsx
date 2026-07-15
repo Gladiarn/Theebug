@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { TrackCard } from "@/components/site/track-card";
+import { CourseGrid } from "@/components/site/course-grid";
 import { TRACKS } from "@/lib/tracks";
 
 export const metadata: Metadata = {
   title: "Learn",
-  description: "Browse every Theebug course: JavaScript, Python, HTML, CSS, and more.",
+  description: "Browse every Theebug course: JavaScript, Python, HTML, CSS, React, and more.",
 };
 
 export default function LearnPage() {
@@ -20,11 +20,7 @@ export default function LearnPage() {
           get instant feedback.
         </p>
       </div>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-4">
-        {TRACKS.map((track) => (
-          <TrackCard key={track.id} track={track} />
-        ))}
-      </div>
+      <CourseGrid tracks={TRACKS} />
     </div>
   );
 }

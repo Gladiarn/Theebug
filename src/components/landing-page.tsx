@@ -118,8 +118,8 @@ export function LandingPage() {
             </h1>
 
             <p className="mb-8 max-w-[460px] text-[15px] leading-relaxed text-text-muted">
-              Real JavaScript, Python, HTML, and CSS with a few pieces missing. Drag the right
-              block into place and watch it resolve — Debug the Worm coaches every drop.
+              Real JavaScript, Python, HTML, CSS, and React with a few pieces missing. Drag the
+              right block into place and watch it resolve — Debug the Worm coaches every drop.
             </p>
 
             <div className="flex flex-wrap gap-3">
