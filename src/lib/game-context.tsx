@@ -9,6 +9,7 @@ import {
   hasSyncedToServer,
   markSyncedToServer,
   setTrackProgress,
+  type LevelStatsMap,
   type TrackProgress,
 } from "./progress-store";
 import { calculateLevelScore } from "./scoring";
@@ -79,9 +80,12 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
   const [zoneFills, setZoneFills] = useState<Record<string, ZoneFill | null>>(() => makeEmptyFills(currentLevel));
   const [score, setScore] = useState(0);
   const [completedLevels, setCompletedLevels] = useState<number[]>([]);
-  // Cumulative real elapsed time (ms) behind `score`, persisted alongside it — see
-  // TrackProgress.totalTimeMs. Never displayed; exists purely as leaderboard tiebreaker input.
-  const [totalTimeMs, setTotalTimeMs] = useState(0);
+  // Source of truth behind `score`/`totalTimeMs`: each level's best-ever score and fastest-ever
+  // time, independently. `score`/persisted `totalTimeMs` are always the *sum* of these — derived,
+  // never incremented directly — specifically so replaying an already-completed level can never
+  // inflate the track total just by completing the same level again (a real bug found and fixed;
+  // see upgrade-plan.md item #19).
+  const [levelStats, setLevelStats] = useState<LevelStatsMap>({});
   const [wormMood, setWormMood] = useState<WormMood>("neutral");
   const [wormMessage, setWormMessage] = useState(currentLevel.wormIntro);
   const [terminalLogs, setTerminalLogs] = useState<string[]>(["[system] Theebug ready. Happy coding!"]);
@@ -162,9 +166,12 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         .then((all) => {
           const saved = all?.[track.id];
           if (saved) {
+            // `levelStats` defaults to {} for progress saved before this field existed — the old
+            // cumulative `score` is still trusted as-is until the next completion, at which point
+            // it becomes derived purely from levelStats going forward (see dropBlock).
             setScore(saved.score);
             setCompletedLevels(saved.completedLevels);
-            setTotalTimeMs(saved.totalTimeMs ?? 0);
+            setLevelStats(saved.levelStats ?? {});
             if (saved.completedLevels.includes(currentLevel.id)) setLevelComplete(true);
           }
           setHydrated(true);
@@ -176,7 +183,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
     if (saved) {
       setScore(saved.score);
       setCompletedLevels(saved.completedLevels);
-      setTotalTimeMs(saved.totalTimeMs ?? 0);
+      setLevelStats(saved.levelStats ?? {});
       if (saved.completedLevels.includes(currentLevel.id)) {
         setLevelComplete(true);
       }
@@ -211,7 +218,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         if (saved) {
           setScore(saved.score);
           setCompletedLevels(saved.completedLevels);
-          setTotalTimeMs(saved.totalTimeMs ?? 0);
+          setLevelStats(saved.levelStats ?? {});
           if (saved.completedLevels.includes(currentLevel.id)) setLevelComplete(true);
         }
       });
@@ -251,15 +258,27 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
 
       if (allCorrect) {
         const levelScore = calculateLevelScore(mistakes, currentLevel.difficulty);
-        const nextScore = score + levelScore;
         const nextCompleted = completedLevels.includes(currentLevel.id)
           ? completedLevels
           : [...completedLevels, currentLevel.id];
         // Real ms elapsed for this attempt, not the once-a-second-rounded `elapsedSeconds` used
-        // for display — this is what actually gives the leaderboard sub-second tiebreak
-        // resolution between two players who land on the same total score.
+        // for display.
         const thisAttemptMs = Date.now() - (levelStartRef.current ?? Date.now());
-        const nextTotalTimeMs = totalTimeMs + thisAttemptMs;
+
+        // Best-ever score and fastest-ever time for THIS level, independently — replaying a level
+        // (via Sidebar) can only ever improve or match each, never make it worse, and can never
+        // inflate the track total just by re-completing the same level (see upgrade-plan.md #19,
+        // a real bug found where every completion unconditionally added to the running total).
+        const previous = levelStats[currentLevel.id];
+        const nextLevelStats: LevelStatsMap = {
+          ...levelStats,
+          [currentLevel.id]: {
+            score: previous ? Math.max(previous.score, levelScore) : levelScore,
+            timeMs: previous ? Math.min(previous.timeMs, thisAttemptMs) : thisAttemptMs,
+          },
+        };
+        const nextScore = Object.values(nextLevelStats).reduce((sum, s) => sum + s.score, 0);
+        const nextTotalTimeMs = Object.values(nextLevelStats).reduce((sum, s) => sum + s.timeMs, 0);
 
         setWormMood("celebrating");
         setWormMessage(currentLevel.wormCorrectAll);
@@ -267,7 +286,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         setScore(nextScore);
         addLog(`[system] Level ${currentLevel.id} complete! +${levelScore} points`);
         setCompletedLevels(nextCompleted);
-        setTotalTimeMs(nextTotalTimeMs);
+        setLevelStats(nextLevelStats);
         setLastLevelPoints(levelScore);
         setJustCompleted(true);
         const progress: TrackProgress = {
@@ -276,6 +295,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
           lastLevelIndex: currentLevelIndex,
           updatedAt: new Date().toISOString(),
           totalTimeMs: nextTotalTimeMs,
+          levelStats: nextLevelStats,
         };
         if (isSignedIn) {
           fetch("/api/progress", {
@@ -304,9 +324,8 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
       currentLevel,
       currentLevelIndex,
       zoneFills,
-      score,
       completedLevels,
-      totalTimeMs,
+      levelStats,
       track,
       addLog,
       isSignedIn,

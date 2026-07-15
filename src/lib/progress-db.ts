@@ -29,9 +29,9 @@ export async function getUserProgress(userId: string): Promise<ProgressMap> {
   const collection = await progressCollection();
   const docs = await collection.find({ userId }).toArray();
   return Object.fromEntries(
-    docs.map(({ trackId, completedLevels, score, lastLevelIndex, updatedAt, totalTimeMs }) => [
+    docs.map(({ trackId, completedLevels, score, lastLevelIndex, updatedAt, totalTimeMs, levelStats }) => [
       trackId,
-      { completedLevels, score, lastLevelIndex, updatedAt, totalTimeMs },
+      { completedLevels, score, lastLevelIndex, updatedAt, totalTimeMs, levelStats },
     ]),
   );
 }
@@ -40,8 +40,8 @@ export async function getUserTrackProgress(userId: string, trackId: string): Pro
   const collection = await progressCollection();
   const doc = await collection.findOne({ userId, trackId });
   if (!doc) return null;
-  const { completedLevels, score, lastLevelIndex, updatedAt, totalTimeMs } = doc;
-  return { completedLevels, score, lastLevelIndex, updatedAt, totalTimeMs };
+  const { completedLevels, score, lastLevelIndex, updatedAt, totalTimeMs, levelStats } = doc;
+  return { completedLevels, score, lastLevelIndex, updatedAt, totalTimeMs, levelStats };
 }
 
 export async function upsertTrackProgress(userId: string, trackId: string, progress: TrackProgress): Promise<void> {

@@ -25,7 +25,8 @@ instant feedback on every choice. Wrong guesses cost nothing but a second try.
 
 ## Features
 
-- 🧩 **Drag-and-drop levels** across JavaScript, Python, HTML, CSS, and React — real code with
+- 🧩 **Drag-and-drop levels** across seven courses — JavaScript, Python, HTML, CSS, React,
+  Node.js, and MongoDB, spanning frontend, backend, and databases — real code with
   fill-in-the-blank zones, distractor blocks, and instant correctness feedback
 - 📊 **Difficulty tiers** (Beginner / Intermediate / Advanced) per track, so lessons scale from
   first-timer to genuinely challenging

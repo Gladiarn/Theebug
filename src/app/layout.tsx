@@ -9,7 +9,7 @@ import "./globals.css";
 
 const SITE_TITLE = "Theebug — Learn to Code by Doing";
 const SITE_DESCRIPTION =
-  "Interactive drag-and-drop coding game for JavaScript, Python, HTML, CSS, and React, guided by a friendly host, enhancing coding skills through engaging challenges.";
+  "Interactive drag-and-drop coding game covering JavaScript, Python, and more — frontend, backend, and databases — guided by a friendly host, enhancing coding skills through engaging challenges.";
 
 // schema.org structured data — helps search engines associate the name "Theebug" specifically
 // with this site (rather than only indexing pages by keyword), which is what actually improves

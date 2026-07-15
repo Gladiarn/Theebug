@@ -22,12 +22,21 @@ export async function POST(request: Request) {
   if (!trackId || !getTrack(trackId) || !progress) {
     return NextResponse.json({ error: "Invalid track or progress payload" }, { status: 400 });
   }
+  const validLevelStats =
+    progress.levelStats === undefined ||
+    (typeof progress.levelStats === "object" &&
+      progress.levelStats !== null &&
+      Object.values(progress.levelStats).every(
+        (s) => typeof s === "object" && s !== null && typeof s.score === "number" && typeof s.timeMs === "number",
+      ));
+
   if (
     !Array.isArray(progress.completedLevels) ||
     typeof progress.score !== "number" ||
     typeof progress.lastLevelIndex !== "number" ||
     typeof progress.updatedAt !== "string" ||
-    (progress.totalTimeMs !== undefined && typeof progress.totalTimeMs !== "number")
+    (progress.totalTimeMs !== undefined && typeof progress.totalTimeMs !== "number") ||
+    !validLevelStats
   ) {
     return NextResponse.json({ error: "Invalid progress payload" }, { status: 400 });
   }
