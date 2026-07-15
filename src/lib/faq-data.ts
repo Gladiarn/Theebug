@@ -15,6 +15,6 @@ export const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "Can I use this on mobile?",
-    a: "The game works best on a larger screen where drag-and-drop feels natural, but the site itself is responsive.",
+    a: "Yes — the whole site, including gameplay, is fully responsive with touch-friendly drag-and-drop.",
   },
 ];

@@ -23,19 +23,27 @@ and roadmap sections, so history isn't lost, just marked done.
 
 ### 1. Landing page feels thin — add more sections
 
-Reported: the homepage "feels lacking" — wants more content/sections so there's more to
-scroll, kept professional, staying visually consistent with the current design (no redesign),
-and unique (not a generic template feel).
+~~**Shipped** — 3 of the 4 originally-proposed sections (per the decided starting order);
+testimonials stayed deferred, as planned, since there's still no real learner content for them.~~
 
-Current state (`src/components/landing-page.tsx`) — 5 sections total: Hero, "how it works"
-(steps), "courses" (track grid, `#courses-section`), "meet your coach" (mascot intro), final
-CTA. Reuses `SectionLabel`/`SectionHeading` helpers already defined at the top of that file —
-any new section should follow the same pattern for visual consistency.
-
-No specific new sections requested yet — needs either more direction from the user or a set of
-concrete proposals (e.g. a stats/numbers bar, a "why Theebug vs. reading docs" comparison, a
-testimonials/social-proof strip, an FAQ preview, a roadmap/what's-next teaser) to pick from
-before building.
+`src/components/landing-page.tsx` grew from 5 sections to 8:
+- **Stats bar** (new, right after the hero): 4 honest, derivable numbers — course count, total
+  level count (both computed from `TRACKS`, not hardcoded), "3" difficulty tiers, "100%" free.
+  Deliberately no invented numbers (no fake learner counts) — everything shown is either computed
+  from real data or a literally-true claim.
+- **"Why Theebug" comparison** (new, after "how it works"): a two-column card — "Traditional
+  tutorials" (✗, muted) vs. "Theebug" (✓, accent-bordered with a glow) — three real, checkable
+  claims per side, adapted from the pitch already written in `README.md`'s "Why" section rather
+  than inventing new marketing copy from scratch.
+- **FAQ preview** (new, before the final CTA): the first 3 entries from the real `FAQ` array
+  (`src/lib/faq-data.ts`), same `<details>` accordion styling as the actual `/faq` page, with a
+  "See all FAQs" link. Also fixed one of those FAQ answers while touching this file — "Can I use
+  this on mobile?" still said the game "works best on a larger screen," which was accurate when
+  written but stale now that #12 shipped real mobile gameplay support; updated to reflect that.
+- Verified live: screenshotted the new sections in both themes, confirmed the FAQ accordion
+  actually expands, confirmed the pre-existing "Browse courses" scroll-to-`#courses-section`
+  anchor still works correctly with the new sections inserted before it. `tsc`/`eslint`/
+  `next build` clean, full Playwright suite (7 tests) still passes.
 
 ### 2. Learn page — many more courses, categorized, with "Show more" pagination
 
@@ -66,17 +74,34 @@ non-intimidating tone throughout (this is a teaching tool, not a terse API refer
 
 ### 7. About page — make it visually creative, not a wall of paragraphs
 
-Current `src/app/(site)/about/page.tsx` (42 lines) reads as plain essay-style text. Wants a more
-creative/unique layout — in the same spirit as how the landing page and other pages already use
-sectioned, visual layouts — rather than more prose blocks.
+~~**Shipped.**~~ `src/app/(site)/about/page.tsx` rebuilt from 4 prose paragraphs into: a short
+lede (not a full paragraph), a 3-card "pillar" grid (No blank page / Instant feedback / Feels
+like the real thing, each with a lucide icon), a "meet your coach" block reusing `WormMascot`
+(same mascot component the landing page uses), and a closing CTA card linking to `/learn`. Kept
+every real claim from the original copy — none of the substance was cut, only the presentation
+changed.
+
+**Real bug caught while verifying, not just a visual pass**: a `<span>...</span> text` pattern on
+the same source line (`Debug the Worm</span> explains...`) silently lost its space in the
+rendered HTML — confirmed via raw `curl` output showing `</span>explains` with no space. Root
+cause: JSX trims leading whitespace on each line of a text node independently, and the word
+immediately after the tag was that line's *first* token, so its leading space got treated as
+line-leading whitespace and stripped — a well-known but easy-to-miss JSX gotcha. Fixed with an
+explicit `{" "}` between the tag and the text. Would not have been caught by a visual skim alone
+at normal reading distance — only surfaced by literally reading the rendered output.
 
 ### 8. Leaderboard — rank-colored borders for top 3 + a motivational line
 
-`src/app/(site)/leaderboard/page.tsx` currently renders every row with the same
-`border-border` styling regardless of rank (only the icon changes: a trophy for top 3, a plain
-number otherwise). Wants #1/#2/#3 to visually stand out with distinct border colors (gold/
-silver/bronze-style treatment) so top ranks feel earned at a glance, plus a short motivational
-line/motto at the bottom of the page encouraging players to climb toward the top spot.
+~~**Shipped.**~~ `src/app/(site)/leaderboard/page.tsx`: top 3 rows now get a fixed (not
+theme-dependent) gold/silver/bronze border + subtle background tint + glow — `Crown` icon for
+#1, `Medal` for #2/#3, colors intentionally not theme CSS variables since medal colors are
+universally recognized and shouldn't shift with light/dark (same reasoning already established
+for the traffic-light dots and `LogoMark`'s fixed brand colors). Added a "keep climbing" motto
+below the list, plus a small "Be the first!" nudge on the empty state. Verified against real
+production leaderboard data (this app already has a live signed-in user on it) — confirmed the
+gold treatment renders correctly; silver/bronze use the identical code path (just a different
+array index into the same fixed style list) so weren't separately re-verified against real data,
+just trusted as the same deterministic logic.
 
 ### 9. Scoring/points system redesign — reduce ties, reward more than just "did you finish"
 
@@ -127,20 +152,25 @@ scope — flagging it as its own open item so it doesn't get silently forgotten.
 
 ### 10. Sidebar: drop Privacy, add an "Updates"/changelog page instead
 
-Privacy is fine living in the footer only (it's already there — `SiteFooter` has its own
-separate hardcoded `/privacy` link) — no need for it to also take a slot in the file-explorer
-sidebar. Replace that slot with a new "Updates" page: a changelog people can browse (v0.0.1,
-v0.1, etc.), designed uniquely/creatively to match the site rather than a plain list.
+~~**Shipped.**~~ New `src/app/(site)/updates/page.tsx` — a vertical release timeline (connecting
+line + icon-in-circle per release, version pill, date, bullet highlights), deliberately *not* a
+git-log/terminal-diff look, per the note already in `plan.md`'s design history that a prior
+terminal/diff-vocabulary direction was explicitly rejected once as "too common, looks
+AI-generated." Content is real release history grounded in what `plan.md`/this file actually
+document (v0.1 initial Figma rebuild through v0.5, the in-progress work from this very phase) —
+no invented features, no fabricated dates beyond the day-level granularity real git history
+actually supports.
 
-Technical note found while scoping: `src/lib/site-pages.ts`'s `SITE_PAGES` array is the single
-registry driving both `SiteSidebar` *and* the tab-bar/breadcrumb (`findSitePage()`, which falls
-back to `SITE_PAGES[0]` — "Home" — for any path with no match). Simply deleting the `/privacy`
-entry would leave the still-live `/privacy` page's tab-bar breadcrumb silently showing "Home" —
-needs a small fix alongside the removal (e.g. keep resolving `/privacy`'s breadcrumb label
-without it appearing in the sidebar list). Also: `plan.md`'s design history already notes a
-prior "terminal/git-diff vocabulary" direction was explicitly rejected once as "too common,
-looks AI-generated" — the Updates page's creative treatment should find its own angle rather
-than reaching for that same look.
+**Technical fix, exactly as scoped**: `src/lib/site-pages.ts`'s `SitePage` type gained an
+optional `hidden` flag. Privacy now has `hidden: true` instead of being deleted outright —
+`SiteSidebar` filters hidden entries out of its rendered list, but `findSitePage()` (which drives
+the tab-bar breadcrumb) still searches the *full*, unfiltered array, so `/privacy`'s breadcrumb
+still correctly resolves to "privacy.md" instead of silently falling back to "Home." Verified
+live: sidebar file list shows `updates.md` and no longer shows `privacy.md`; visiting `/privacy`
+directly still shows the correct `privacy.md` tab label. `SiteFooter`'s existing separate
+`/privacy` link is untouched, so Privacy stays reachable exactly as intended. Also added
+`/updates` to `sitemap.ts`. `tsc`/`eslint`/`next build` clean, full Playwright suite (7 tests)
+still passes (this touched shared nav components used on every site page).
 
 ### 11. Terminal — make the IDE chrome actually functional: resizable + real tabs + live output
 
@@ -349,8 +379,8 @@ the base multiplier is live and its effect on real scores can actually be seen.
 **Decided approach for #14**: prototype multi-block-per-line on 1-2 existing hard levels first,
 before mass-authoring it into every new course in Phase 4.
 
-**Phase 3 — Visual/creative pages.**
-#1 (landing sections) → #7 (about page) → #8 (leaderboard) → #10 (updates page).
+**Phase 3 — Visual/creative pages. Shipped.**
+~~#1 (landing sections)~~ → ~~#7 (about page)~~ → ~~#8 (leaderboard)~~ → ~~#10 (updates page)~~.
 Reasoning: all four are self-contained, no shared dependencies between them — grouped here
 because by this point both the new accent font (#16) and finalized mobile patterns (#6/#12)
 already exist, so these ship once, correctly, instead of needing a follow-up pass for either.
