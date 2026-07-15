@@ -1,6 +1,7 @@
 import { Analytics } from "@vercel/analytics/next";
+import { GeistPixelSquare } from "geist/font/pixel";
 import type { Metadata } from "next";
-import { JetBrains_Mono, Martian_Mono } from "next/font/google";
+import { JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { SITE_NAME, SITE_URL } from "@/lib/site-constants";
 import { THEME_STORAGE_KEY } from "@/lib/theme-constants";
@@ -32,13 +33,10 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 // Second, deliberately-scoped typeface — used only for the accent-emphasis phrase inside
-// landing-page headlines (see `.text-accent-emphasis` in globals.css), not site-wide. Its blocky,
-// terminal-display letterforms make that emphasis read stronger than color alone.
-const martianMono = Martian_Mono({
-  subsets: ["latin"],
-  weight: ["700"],
-  variable: "--font-martian-mono",
-});
+// landing-page headlines (see `.text-accent-emphasis` in globals.css), not site-wide. Vercel's
+// Geist Pixel (the "Square" style) gives that emphasis a distinct pixelated look, stronger than
+// color alone. Self-hosted local font (no Google Fonts network fetch), ships one static weight
+// (500) — don't force a heavier CSS font-weight on it, that just triggers synthetic/faux bold.
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -75,7 +73,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${jetbrainsMono.variable} ${martianMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${jetbrainsMono.variable} ${GeistPixelSquare.variable}`} suppressHydrationWarning>
       <body>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }} />

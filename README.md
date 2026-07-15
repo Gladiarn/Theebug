@@ -6,7 +6,7 @@ Theebug is a VS Code–styled, drag-and-drop coding game. Every level is real, w
 a few pieces missing — drag the correct block into place and watch it resolve, coached by
 **Debug the Worm** every step of the way.
 
-🔗 **Live:** [theebug.vercel.app](https://theebug.vercel.app)
+🔗 **Live:** [theebug.cc.cd](https://www.theebug.cc.cd)
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)

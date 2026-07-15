@@ -282,12 +282,15 @@
 }
 
 /* Scoped exception to the one-typeface rule above: only for the emphasized phrase inside a
-   landing-page headline (paired with `text-accent` for color), never used site-wide. Martian
-   Mono's blocky, terminal-display letterforms make the emphasis read stronger than color alone. */
+   landing-page headline (paired with `text-accent` for color), never used site-wide. Geist
+   Pixel's blocky, pixelated letterforms make the emphasis read stronger than color alone. */
 .text-accent-emphasis {
-  font-family: var(--font-martian-mono), var(--font-mono);
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-family: var(--font-geist-pixel-square), var(--font-mono);
+  /* Geist Pixel ships a single static weight (500) — forcing a heavier CSS weight on it just
+     triggers a synthetic/faux bold, not a real one. Font-size is deliberately untouched here so
+     it always matches the surrounding headline text exactly. */
+  font-weight: 500;
+  letter-spacing: normal;
 }
 
 @keyframes caret-blink {

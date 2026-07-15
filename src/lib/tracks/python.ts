@@ -263,33 +263,44 @@ export const pythonTrack: Track = {
       title: "Error Handling",
       filename: "lesson9.py",
       difficulty: "hard",
-      objective: "Complete the try/except so a parsing failure returns None instead of crashing",
+      objective:
+        "Complete the try/except keyword AND name the specific exception type so a parsing failure returns None instead of crashing",
       preview: ["42", "None"],
       codeLines: [
         "def parse_number(text):",
         "    try:",
         "        return int(text)",
-        "    {{zone1}} ValueError:",
+        "    {{zone1}} {{zone2}}:",
         "        return None",
         "",
         'print(parse_number("42"))      # 42',
         'print(parse_number("invalid")) # None',
       ],
-      zones: [{ id: "zone1", answer: "except" }],
+      // Two independent decisions on the same line — the syntax keyword, and which specific
+      // exception type int() actually raises — rather than one blank per line.
+      zones: [
+        { id: "zone1", answer: "except" },
+        { id: "zone2", answer: "ValueError" },
+      ],
       blocks: [
         { id: "b1", code: "except" },
         { id: "b2", code: "catch" },
         { id: "b3", code: "error" },
         { id: "b4", code: "finally" },
+        { id: "b5", code: "ValueError" },
+        { id: "b6", code: "TypeError" },
+        { id: "b7", code: "KeyError" },
+        { id: "b8", code: "Exception" },
       ],
-      wormIntro: "Code that might fail goes in try. Which keyword catches the error if it raises?",
+      wormIntro:
+        "Two blanks this time! First: which keyword catches an error if it raises? Second: int(\"invalid\") raises a specific kind of error — which one?",
       wormCorrectAll:
-        "except ValueError: catches specifically that error type — now bad input returns None instead of crashing! You've completed the Python track! 🏆🎊",
+        "except ValueError: — the right keyword AND the exact error type int() raises on bad input! Now bad input returns None instead of crashing. You've completed the Python track! 🏆🎊",
       concept: {
-        summary: "try/except lets you run code that might fail without crashing the whole program.",
+        summary: "try/except lets you run code that might fail without crashing the whole program — and naming the right exception type matters, not just the syntax.",
         details: [
-          "Code inside try runs normally until something raises — the moment that happens, execution jumps straight into except, skipping the rest of the try block. except ValueError specifically catches ValueErrors, letting other, unexpected error types still crash loudly.",
-          'int("invalid") raises a ValueError because "invalid" can\'t be converted to an integer — without a try/except around it, that error would crash the whole program instead of being handled gracefully.',
+          "Code inside try runs normally until something raises — the moment that happens, execution jumps straight into except, skipping the rest of the try block. except ValueError specifically catches ValueErrors, letting other, unexpected error types still crash loudly instead of being silently swallowed.",
+          'int("invalid") raises a ValueError specifically, because "invalid" can\'t be converted to an integer — TypeError, KeyError, and the others are real Python exceptions too, just not the one this particular call actually raises. Catching the exact type you expect (rather than a bare except:) is what keeps genuinely unexpected bugs from getting silently hidden.',
           "Python spells this except, not JavaScript's catch — a common slip when switching between the two languages.",
         ],
         example: 'try:\n    result = 10 / 0\nexcept ZeroDivisionError:\n    print("Cannot divide by zero")',

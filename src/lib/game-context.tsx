@@ -79,6 +79,9 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
   const [zoneFills, setZoneFills] = useState<Record<string, ZoneFill | null>>(() => makeEmptyFills(currentLevel));
   const [score, setScore] = useState(0);
   const [completedLevels, setCompletedLevels] = useState<number[]>([]);
+  // Cumulative real elapsed time (ms) behind `score`, persisted alongside it — see
+  // TrackProgress.totalTimeMs. Never displayed; exists purely as leaderboard tiebreaker input.
+  const [totalTimeMs, setTotalTimeMs] = useState(0);
   const [wormMood, setWormMood] = useState<WormMood>("neutral");
   const [wormMessage, setWormMessage] = useState(currentLevel.wormIntro);
   const [terminalLogs, setTerminalLogs] = useState<string[]>(["[system] Theebug ready. Happy coding!"]);
@@ -161,6 +164,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
           if (saved) {
             setScore(saved.score);
             setCompletedLevels(saved.completedLevels);
+            setTotalTimeMs(saved.totalTimeMs ?? 0);
             if (saved.completedLevels.includes(currentLevel.id)) setLevelComplete(true);
           }
           setHydrated(true);
@@ -172,6 +176,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
     if (saved) {
       setScore(saved.score);
       setCompletedLevels(saved.completedLevels);
+      setTotalTimeMs(saved.totalTimeMs ?? 0);
       if (saved.completedLevels.includes(currentLevel.id)) {
         setLevelComplete(true);
       }
@@ -206,6 +211,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         if (saved) {
           setScore(saved.score);
           setCompletedLevels(saved.completedLevels);
+          setTotalTimeMs(saved.totalTimeMs ?? 0);
           if (saved.completedLevels.includes(currentLevel.id)) setLevelComplete(true);
         }
       });
@@ -231,14 +237,29 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
       const allCorrect = currentLevel.zones.every((z) => nextFills[z.id]?.correct === true);
 
       setZoneFills(nextFills);
-      addLog(`[drop] "${code}" → ${zoneId} ${correct ? "✓" : "✗"}`);
+      if (correct) {
+        addLog(`[drop] "${code}" → ${zoneId} ✓`);
+      } else {
+        // Reads like a real compiler/runtime error (location + a generic "doesn't fit here"
+        // message) rather than a bare ✗ — but deliberately never names the correct answer, since
+        // that would just spoil the puzzle. Location is derived from the level's own codeLines,
+        // not a separately-maintained line number, so it can't drift out of sync with the data.
+        const lineIndex = currentLevel.codeLines.findIndex((line) => line.includes(`{{${zoneId}}}`));
+        const location = lineIndex === -1 ? currentLevel.filename : `${currentLevel.filename}:${lineIndex + 1}`;
+        addLog(`[error] ${location} — "${code}" is not valid here`);
+      }
 
       if (allCorrect) {
-        const levelScore = calculateLevelScore(mistakes);
+        const levelScore = calculateLevelScore(mistakes, currentLevel.difficulty);
         const nextScore = score + levelScore;
         const nextCompleted = completedLevels.includes(currentLevel.id)
           ? completedLevels
           : [...completedLevels, currentLevel.id];
+        // Real ms elapsed for this attempt, not the once-a-second-rounded `elapsedSeconds` used
+        // for display — this is what actually gives the leaderboard sub-second tiebreak
+        // resolution between two players who land on the same total score.
+        const thisAttemptMs = Date.now() - (levelStartRef.current ?? Date.now());
+        const nextTotalTimeMs = totalTimeMs + thisAttemptMs;
 
         setWormMood("celebrating");
         setWormMessage(currentLevel.wormCorrectAll);
@@ -246,6 +267,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         setScore(nextScore);
         addLog(`[system] Level ${currentLevel.id} complete! +${levelScore} points`);
         setCompletedLevels(nextCompleted);
+        setTotalTimeMs(nextTotalTimeMs);
         setLastLevelPoints(levelScore);
         setJustCompleted(true);
         const progress: TrackProgress = {
@@ -253,6 +275,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
           score: nextScore,
           lastLevelIndex: currentLevelIndex,
           updatedAt: new Date().toISOString(),
+          totalTimeMs: nextTotalTimeMs,
         };
         if (isSignedIn) {
           fetch("/api/progress", {
@@ -277,7 +300,19 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         }, 2200);
       }
     },
-    [currentLevel, currentLevelIndex, zoneFills, score, completedLevels, track, addLog, isSignedIn, mistakes, hydrated],
+    [
+      currentLevel,
+      currentLevelIndex,
+      zoneFills,
+      score,
+      completedLevels,
+      totalTimeMs,
+      track,
+      addLog,
+      isSignedIn,
+      mistakes,
+      hydrated,
+    ],
   );
 
   const nextLevel = useCallback(() => {
