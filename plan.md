@@ -394,16 +394,24 @@ and every cold start resets the count anyway. Rate limiting needs a shared store
 - Project **`theebug`** under the **`gladiarns-projects`** team (Hobby plan). **Hard
   constraint, confirmed by the user: never run Vercel commands under any other scope** — the
   same account also has a `kpve` team with live client production apps.
-- Production domain: **https://theebug.vercel.app**. Framework preset: Next.js (Turbopack,
-  auto-detected `next build`).
+- Production domain: **https://www.theebug.cc.cd** (bare `theebug.cc.cd` 307-redirects here).
+  **`theebug.vercel.app` was deleted by the user and now 404s** — it is no longer live and must
+  not be referenced as the production URL anywhere going forward. Framework preset: Next.js
+  (Turbopack, auto-detected `next build`).
 - **Env vars are currently Production-only** (confirmed via `vercel env ls`) — Preview and
   Development deployments have none of the four secrets. `/play/*` still works on a preview
   deploy (no DB needed for anonymous play), but sign-in and progress sync would fail there.
 - **Two separate GitHub OAuth Apps** exist because classic OAuth Apps support exactly one
   callback URL each: "Theebug" (local dev, `http://localhost:3000/api/auth/callback/github`)
-  and "Theebug (Production)" (`https://theebug.vercel.app/api/auth/callback/github`). If preview
-  deploys ever need working sign-in, this is the blocker to solve first — Vercel's per-branch
-  preview URLs don't have a clean single callback URL to register.
+  and "Theebug (Production)", **documented as `https://theebug.vercel.app/api/auth/callback/github`
+  — now stale since that domain was deleted.** ⚠️ **Action needed (GitHub-side, not code): update
+  the "Theebug (Production)" OAuth App's Authorization callback URL to
+  `https://www.theebug.cc.cd/api/auth/callback/github` at
+  github.com/settings/developers, or GitHub sign-in on production will fail.** This is an
+  external setting Claude Code has no access to — only the user can make this change. If preview
+  deploys ever need working sign-in, the same one-callback-per-app limitation is the blocker to
+  solve first — Vercel's per-branch preview URLs don't have a clean single callback URL to
+  register.
 - Deploys are currently manual (`vercel --prod --scope gladiarns-projects` or equivalent) — no
   CI/CD auto-deploy-on-push has been set up/confirmed.
 
@@ -541,7 +549,7 @@ priority (risk/impact if skipped, not effort):
    risk (low-stakes data, a free personal project) vs. a scheduled `mongodump` export (would
    need somewhere free to store the dump — e.g. a scheduled GitHub Action pushing an encrypted
    export to a private repo or Backblaze B2's free tier).
-10. **Uptime monitoring.** Nothing currently alerts if `theebug.vercel.app` goes down (Vercel
+10. **Uptime monitoring.** Nothing currently alerts if `www.theebug.cc.cd` goes down (Vercel
     itself is reliable, but MongoDB Atlas or a bad deploy could still take the app down without
     anyone noticing). **UptimeRobot**'s free tier (50 monitors, 5-minute checks) covers this in
     a few minutes of setup.
@@ -1052,10 +1060,11 @@ of them.
   every real secret value from `.env.local` against the file (zero matches) before publishing.
 - **Custom domain**: `theebug.cc.cd` (free registrar) added under the `gladiarns-projects`
   Vercel team, delegated to Vercel's nameservers (`ns1`/`ns2.vercel-dns.com`) rather than the
-  A-record method — confirmed via `vercel domains ls`. **Still open**: update the production
-  GitHub OAuth App's callback URL to the new domain if/when it becomes the primary URL instead
-  of `theebug.vercel.app` (classic OAuth Apps only support one callback URL each — see
-  "Deployment" above for the existing two-app split).
+  A-record method — confirmed via `vercel domains ls`. **Update**: the user has since deleted
+  `theebug.vercel.app` entirely (confirmed 404) — `https://www.theebug.cc.cd` is now the sole
+  production domain. **Still open, GitHub-side, needs the user**: the production GitHub OAuth
+  App's callback URL is still registered against the deleted `theebug.vercel.app` domain — see
+  the ⚠️ action item in "Deployment" above.
 
 ## Where this plan.md leaves off
 

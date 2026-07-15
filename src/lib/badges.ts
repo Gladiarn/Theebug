@@ -1,3 +1,4 @@
+import { getLevelMaxScore } from "@/lib/scoring";
 import type { ProgressMap } from "@/lib/progress-store";
 import type { Track } from "@/lib/tracks";
 
@@ -9,9 +10,10 @@ export interface Badge {
 
 // Every badge here is computed purely from data already persisted (completedLevels/score per
 // track) — no new fields, no schema changes. Notably: there's no per-level "zero mistakes"
-// record kept, only each track's summed score — but since every level's max score is 100,
-// a track's score equalling `levels.length * 100` can only happen if every level in it was
-// completed with zero mistakes, so "perfect track" is still honestly derivable from existing data.
+// record kept, only each track's summed score — but since every level has a known max score
+// (getLevelMaxScore, which varies by difficulty), a track's score equalling the sum of every
+// level's max can only happen if every level in it was completed with zero mistakes, so "perfect
+// track" is still honestly derivable from existing data.
 export function computeBadges(progress: ProgressMap, tracks: Track[]): Badge[] {
   const badges: Badge[] = [];
   const startedTracks = tracks.filter((t) => (progress[t.id]?.completedLevels.length ?? 0) > 0);
@@ -35,7 +37,8 @@ export function computeBadges(progress: ProgressMap, tracks: Track[]): Badge[] {
         label: `${track.title} Track Complete`,
         description: `Finished every level in ${track.title}.`,
       });
-      if (trackProgress.score === total * 100) {
+      const maxPossibleScore = track.levels.reduce((sum, l) => sum + getLevelMaxScore(l.difficulty), 0);
+      if (trackProgress.score === maxPossibleScore) {
         badges.push({
           id: `perfect-${track.id}`,
           label: `${track.title} Perfectionist`,

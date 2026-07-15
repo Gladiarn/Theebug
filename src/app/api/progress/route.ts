@@ -26,7 +26,8 @@ export async function POST(request: Request) {
     !Array.isArray(progress.completedLevels) ||
     typeof progress.score !== "number" ||
     typeof progress.lastLevelIndex !== "number" ||
-    typeof progress.updatedAt !== "string"
+    typeof progress.updatedAt !== "string" ||
+    (progress.totalTimeMs !== undefined && typeof progress.totalTimeMs !== "number")
   ) {
     return NextResponse.json({ error: "Invalid progress payload" }, { status: 400 });
   }

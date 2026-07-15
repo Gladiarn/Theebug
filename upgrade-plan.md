@@ -80,33 +80,50 @@ line/motto at the bottom of the page encouraging players to climb toward the top
 
 ### 9. Scoring/points system redesign — reduce ties, reward more than just "did you finish"
 
-Current formula (`src/lib/scoring.ts`, `calculateLevelScore`): flat `100 - mistakes*10`, floored
-at 40 — same base regardless of speed or difficulty, so many players land on identical scores.
-Ask: track time at millisecond precision (today's `elapsedSeconds` in `game-context.tsx` already
-derives from `Date.now()` but rounds/stores at 1-second resolution) and factor speed — plus
-"more features that could contribute to the score" — into the formula so scores actually
-differentiate players.
+~~**Shipped, first slice (difficulty multiplier + ms tiebreaker), per the decided plan.**~~ Speed
+bonus, streak bonus, and hint cost remain a later increment (not built this pass).
 
-**Needs a joint design decision before building** — a few concrete directions to choose from
-(or combine) next time we plan this:
-- **Speed bonus**: extra points for finishing under a par time per level, tapering off (not
-  unbounded, to avoid runaway scores).
-- **Difficulty multiplier**: today an easy and a hard level both award the same base 100 —
-  weighting hard/medium levels higher would itself reduce ties and better reward harder content.
-- **Streak bonus**: consecutive zero-mistake completions in a session compound a small bonus.
-- **Hint cost**, if the hint system from `plan.md`'s roadmap gets built — using a hint reduces
-  the level's score, adding another differentiating factor.
-- **Millisecond tiebreaker**: even without changing the score itself, storing completion time
-  at ms precision (rather than rounding to whole seconds) gives the leaderboard a tiebreaker
-  when two players land on the exact same score.
+- **Difficulty multiplier** (`src/lib/scoring.ts`): `calculateLevelScore` now takes
+  `(mistakes, difficulty)`. Base score scales by difficulty — easy 100 / medium 150 / hard 200 —
+  with the same *proportional* shape as the old formula: 10% of base deducted per mistake,
+  floored at 40% of base. Easy levels behave byte-for-byte identically to before (100, -10/
+  mistake, floor 40) — this is additive, not a rebalance of existing content. New
+  `getLevelMaxScore(difficulty)` exported for reuse. Verified live: a hard level (JS lesson 6,
+  "Closures") with zero mistakes now awards **+200**, confirmed via a scripted Playwright drag +
+  reading the reward modal's actual displayed points, not just unit tests.
+- **`badges.ts`'s "Perfectionist" fix**, done in the same pass as flagged: now compares
+  `trackProgress.score` against `sum of getLevelMaxScore(level.difficulty)` per track instead of
+  the old hardcoded `levels.length * 100` — stays correct now that levels have different max
+  values. `badges.test.ts` needed no changes (its mock levels are all `"easy"`, where the old and
+  new max happen to coincide).
+- **Millisecond-precision leaderboard tiebreaker**: `TrackProgress` gained an optional
+  `totalTimeMs` field (`progress-store.ts`) — real `Date.now()`-based elapsed time per completed
+  level (not the once-a-second-rounded `elapsedSeconds` used for the on-screen timer), summed
+  cumulatively per track the same way `score` already is, persisted through both the localStorage
+  and MongoDB paths (`game-context.tsx`, `progress-db.ts`, `/api/progress`'s manual validation).
+  `getLeaderboard()`'s aggregation now also sums `totalTimeMs` per user and sorts
+  `{ totalScore: -1, totalTimeMs: 1 }` — score still wins first, faster total time silently breaks
+  a tie. Old progress docs with no `totalTimeMs` field contribute `0` via Mongo's `$sum`
+  (acceptable at this project's scale — not worth a migration script for a tiebreaker). Not
+  surfaced in the leaderboard UI — sort key only, per the original "give it a tiebreaker" ask, not
+  a new visible stat.
+- Verified: `tsc --noEmit`/`eslint .`/`vitest run` (15 tests, `scoring.test.ts` rewritten for the
+  new per-difficulty signature)/`next build` all clean; full Playwright suite (7 tests) passes —
+  one run had a single flake in the "clean completion" test under 6-worker parallel load,
+  re-confirmed 3/3 passing in isolation and 7/7 on a subsequent full run, so not a real regression
+  from this change (matches the same class of pre-existing drag/hydration timing sensitivity
+  `plan.md` already documents elsewhere, not something newly introduced here).
 
-**Real blast-radius note found while scoping this**: `src/lib/badges.ts`'s "Perfectionist"
-badge currently infers a zero-mistake track completion from `totalScore === levels.length * 100`
-— any change to the base-100-per-level assumption breaks that badge's logic, so badges.ts needs
-to be part of this redesign, not a side effect discovered after shipping it. Also, only the
-*summed* score currently persists per track (`progress-db.ts`) — no per-level time/mistake
-history — so a real ms-based tiebreaker likely needs new persisted fields, not just a formula
-tweak.
+**Real bug found while scoping this, pre-existing, not introduced by the above — logging it
+rather than silently fixing or ignoring it**: `dropBlock`'s completion branch always does
+`nextScore = score + levelScore`, **even when replaying an already-completed level** — only
+`completedLevels` guards against duplicates, not `score`. So repeatedly re-completing the same
+level (e.g. clicking into `Sidebar` and dragging the same correct answer again) inflates a
+track's score without bound, which would also eventually push a track's score *above* its true
+max and make the "Perfectionist" badge's exact-equality check silently un-earnable (not crash —
+just never trigger). Not fixed here: a real fix needs a product decision (should replaying be
+free/no-op, only count the better of two attempts, or something else) that's outside this task's
+scope — flagging it as its own open item so it doesn't get silently forgotten.
 
 ### 10. Sidebar: drop Privacy, add an "Updates"/changelog page instead
 
@@ -139,41 +156,93 @@ is decorative today, confirmed in code:
   no real separation of "problems" (e.g. a wrong-drop's expected-vs-actual) vs. "output" vs. a
   debug console, since there's only ever been one log array.
 
-Wants: real VS-Code-style behavior — Problems/Output/Debug Console actually switch content when
-clicked (mirroring real IDEs); the panel becomes vertically resizable by dragging its top edge
-upward, with a sensible min and max height (never collapsible to 0, never able to swallow the
-whole screen); and drag-and-drop feedback should read more like a real IDE surfacing an actual
-error (e.g. an "expected X, got Y" style message on a wrong drop) rather than just a plain ✗ log
-line. No drag-to-resize pattern exists anywhere else in the game shell yet — this would be new.
+~~**Shipped.**~~ `src/components/game/terminal.tsx` rewritten:
+- **Tabs actually switch content now**, with real per-tab state (`activeTab`): **Terminal**
+  shows the full combined log (unchanged); **Problems** filters to error entries only, styled as
+  real problem-panel rows (red `AlertCircle` icon, red text, a red count badge on the tab itself,
+  "No problems detected." when clean); **Output** filters to everything *except* errors (the
+  clean success/system trail); **Debug Console** is a live state view — not log-based at all —
+  showing `mistakes`, `elapsedSeconds`, `wormMood`, current level filename, and every zone's fill
+  state, updating live as you play (a real "watch panel," reinforcing the coding-education angle
+  rather than just decoration).
+- **Real error messages, without spoiling the puzzle.** Wrong drops used to log a bare
+  `"code" → zoneId ✗`. Now (`game-context.tsx`'s `dropBlock`) they log
+  `[error] lessonN.js:L — "code" is not valid here` — a genuine file:line reference (derived by
+  searching the level's own `codeLines` for `{{zoneId}}`, so it can't drift out of sync with the
+  data) styled like a real compiler/runtime error. Deliberately never names the *correct* answer
+  — "expected X, got Y" would have spoiled the puzzle instantly, so it stays a generic-but-real
+  "doesn't fit here" message instead.
+- **Resizable, with real min/max clamping.** A pointer-based drag handle (works on touch, not
+  just mouse) on the panel's top edge; height is now a controlled `useState` (default 110px, same
+  as before) clamped to **80px–360px**. Verified via scripted drags that both ends of the clamp
+  actually hold: a huge downward drag settles at exactly 80px (never 0/never fully collapses), a
+  huge upward drag settles at exactly 360px (never swallows the editor above it) — an earlier,
+  more naive version of this same test showed a confusing 140px result that turned out to be the
+  *test script* dragging the mouse off the top of the browser viewport (a Playwright artifact,
+  not an app bug) — re-verified cleanly once the test isolated each drag on a fresh page load.
+- Verified end-to-end: screenshotted all four tabs (including a real wrong-drop populating
+  Problems with the new error format) and the resized state; confirmed zero mobile regression at
+  390px (no horizontal overflow, Problems tab renders correctly there too, matching the mobile
+  work from #12). `tsc`/`eslint`/`vitest` (still 15 tests)/`next build` all clean, full Playwright
+  suite (7 tests) still passes.
 
 ### 14. Difficulty should scale problem *complexity*, not just problem count
 
-Ties directly into #9 (scoring) — more zones per level is itself part of what would reduce
-near-identical scores. Concrete mechanic idea floated: for medium/hard levels, require dragging
-*multiple* separate blocks to complete one line (e.g. a function's name, its parameter list, and
-its closing brace/colon as three independent drops) rather than today's pattern of one block
-filling one blank per line. Checked the data model: `Level.zones` already supports multiple
-`{{zoneN}}` placeholders, including more than one per level (`javascript.ts` level 1 already has
-`zone1`/`zone2` across two lines) — so multi-blank-per-line is a **content-authoring** extension
-of the existing shape, not a new engine feature. Worth planning alongside #9 and #2 (new
-courses) rather than in isolation, since all three are about the same underlying goal: more
-depth per level as tracks scale up.
+~~**Prototype shipped**, per the decided plan (1-2 hard levels, before mass-authoring in
+Phase 4).~~
 
-Broader ask: "gameplay currently is lacking" — people can get near-perfect scores too easily and
-land on similar scores often. Worth a dedicated planning pass combining this, #9, and general
-mechanic ideas (harder distractor blocks, timed pressure elements, etc.) rather than shipping
-piecemeal.
+**Found while scoping, before writing any new content**: same-line multi-zone levels
+already existed — `html.ts`/`css.ts` already have levels with two `{{zoneN}}` placeholders on
+one literal line (e.g. `'<img {{zone1}}="worm.png" {{zone2}}="Debug the worm" />'`), and
+`editor-area.tsx`'s line-parser (`line.split(/(\{\{[^}]+\}\})/)`) already handles any number of
+zones per line generically. So this was lower-risk than the original write-up assumed — a proven
+mechanic, not new engine work — just not yet used on JS/Python's **hard** tier specifically,
+which is what this prototype set out to prove.
+
+Converted two existing hard levels (one per language, to prove it across languages, not just
+repeat the same trick once):
+- **JS lesson 7, "Destructuring in Callbacks"** (`src/lib/tracks/javascript.ts`): line now reads
+  `students.{{zone1}}((sum, {{zone2}}) => sum + score, 0)` — zone1 picks the right array method
+  (`reduce`, vs. distractors `map`/`filter`/`forEach`), zone2 destructures the callback parameter
+  (`{ score }`, vs. `score`/`{ name }`/`student`). Two genuinely independent decisions on one
+  line, not just two arbitrary blanks — picked specifically because `reduce` vs. `map`/`filter`
+  is a real, common conceptual mix-up.
+- **Python lesson 9, "Error Handling"** (`src/lib/tracks/python.ts`): line now reads
+  `{{zone1}} {{zone2}}:` — zone1 is the syntax keyword (`except`), zone2 is the *specific*
+  exception type `int()` actually raises (`ValueError`, vs. `TypeError`/`KeyError`/`Exception` —
+  all real Python exceptions, just not the one this call raises). Tests syntax *and* whether the
+  player actually knows what error a given call produces, not just the keyword.
+- Both levels' `objective`/`wormIntro`/`wormCorrectAll`/`concept` copy rewritten to explain both
+  decisions, not just one.
+- Verified live via scripted Playwright drags on both (not just visual/unit checks): both render
+  as two distinct same-line drop zones ("0/2 slots correct" tracker), both award **+200** (hard
+  base, zero mistakes) on a clean run, screenshotted both the in-progress and completed states.
+  Full suite re-verified after: `tsc`/`eslint`/`vitest`/`next build` clean, all 7 Playwright e2e
+  tests pass.
+
+**Not done this pass, left as explicitly out of scope for a prototype**: timed pressure elements
+and harder/more deceptive distractor blocks generally (mentioned in the original ask as other
+"gameplay currently is lacking" ideas) — this item was specifically about proving the
+multi-block-per-line mechanic; broader mechanic ideas stay a separate future conversation.
 
 ### 15. Confirm-before-leaving dialog when exiting a level mid-attempt
 
-`MenuBar`'s home/logo link (`src/components/game/menu-bar.tsx` line 25,
-`<Link href="/">`) navigates immediately with no guard. Confirmed this is a real loss, not just
-a feeling: progress only persists on level *completion* (`dropBlock`'s `allCorrect` branch in
-`game-context.tsx`) — mid-level state (`zoneFills`, `mistakes`, `elapsedSeconds`) is ephemeral
-and resets on remount, so navigating away mid-level genuinely does lose that attempt. Wants a
-confirmation prompt ("are you sure? this attempt won't be saved") before leaving to Home while a
-level is incomplete — likely scoped to the same home-link click, possibly also the browser
-back/tab-close case if that's feasible, but the explicit ask was the in-app Home link.
+~~**Shipped.**~~ New `src/components/game/leave-confirm-dialog.tsx` — same accessible-dialog
+shape as `LevelCompleteModal` (focus trap, Escape-to-dismiss, restores focus to whatever was
+focused before it opened), but defaults focus onto the *safe* action ("Stay and finish") rather
+than the dialog container, since a mistimed Enter here would discard real progress. `MenuBar`'s
+Home `<Link>` (kept as a real anchor, not swapped for a button, so right-click/open-in-new-tab
+still work) intercepts its click via `preventDefault()` and shows the dialog **only when
+`levelComplete` is false** — clicking Home on an already-completed level still navigates
+immediately, no interruption. "Leave anyway" calls `router.push("/")`; "Stay and finish" or
+Escape just closes the dialog and leaves you on the level.
+
+Verified live via Playwright, not just visually: on an incomplete level, clicking Home keeps the
+URL unchanged and shows the dialog with "Stay and finish" already focused; Escape dismisses it;
+clicking "Leave anyway" navigates to `/`; on an already-*completed* level (played to the reward
+modal, then "Review level"), clicking Home navigates straight to `/` with no dialog at all. Scoped
+to the in-app Home link only, as asked — browser back/tab-close isn't covered (that would need the
+`beforeunload` API, a different mechanism, and wasn't part of the explicit ask).
 
 ### 17. SEO — get found when someone searches "Theebug" or related terms. **Code shipped, one manual step + one decision left.**
 
@@ -193,17 +262,27 @@ previously each hardcoded the domain string separately). Verified end-to-end: `n
 clean, `/opengraph-image` registered as its own static route, and the rendered homepage HTML
 contains the expected `og:*`/`twitter:*` meta tags and both JSON-LD scripts.
 
-**Decided**: kept `https://theebug.vercel.app` as the canonical SEO domain (matches what
-`README.md`/`plan.md` already document as "Live," and `theebug.cc.cd` — confirmed via
-`vercel domains inspect` — is only aliased as `www.theebug.cc.cd`, not the bare apex, on a free
-third-party registrar). `theebug.cc.cd` stays live and functional, just not canonical for SEO
-purposes. **Flagging this for the user to override if they'd rather promote the free domain
-instead** — it's a real judgment call, not a technical necessity, so worth a conscious yes/no
-rather than staying silently decided.
+**Update — domain decision resolved, not by me.** The user deleted `theebug.vercel.app` entirely
+(confirmed via `curl`: now 404s `DEPLOYMENT_NOT_FOUND`) and kept `theebug.cc.cd` as the one and
+only production domain. `SITE_URL` in `src/lib/site-constants.ts` is now
+`https://www.theebug.cc.cd` (the exact URL that serves 200 — bare `theebug.cc.cd` 307-redirects
+here), which automatically propagates to `layout.tsx`'s `metadataBase`/OG/Twitter tags,
+`sitemap.ts`, and `robots.ts`. Also fixed the same stale-domain reference in `README.md`'s Live
+link and several spots in `plan.md`.
+
+**Real bug surfaced by this domain change, not just a docs cleanup**: `plan.md`'s "Deployment"
+section documents the production GitHub OAuth App's callback URL as
+`https://theebug.vercel.app/api/auth/callback/github` — now a dead domain. Classic GitHub OAuth
+Apps only support one callback URL each, and that setting lives on GitHub's own site
+(github.com/settings/developers), not in this repo, so it wasn't touched when the domain was
+deleted. **GitHub sign-in on production is very likely broken right now** until the user updates
+that callback URL to `https://www.theebug.cc.cd/api/auth/callback/github` themselves — flagged
+prominently in `plan.md` as an action item, since this is outside what Claude Code can access or
+fix.
 
 **Still open**: the one *manual* step — verifying the site in **Google Search Console** and
-submitting `sitemap.xml` — can't be done via code; do this once the domain choice above is
-confirmed, so verification doesn't need to be redone against a different domain later.
+submitting `sitemap.xml` — can't be done via code; the domain question that was blocking this is
+now resolved, so this can happen anytime.
 
 ### 18. Console noise — `THREE.Clock` deprecation warning (upstream, no action)
 
@@ -215,6 +294,23 @@ actually broken; this is upstream library-version noise, not an app bug — no c
 Real resolution is a future `@react-three/fiber` release adopting `THREE.Timer`; revisit by
 bumping the dependency next time deps are touched (see `plan.md`'s "Known placeholders" for the
 other already-tracked unused/outdated dependency, `@react-three/drei`).
+
+### 19. Replaying a completed level inflates score without bound (found while building #9, not fixed)
+
+`dropBlock`'s completion branch (`src/lib/game-context.tsx`) always runs
+`nextScore = score + levelScore`, regardless of whether the level being completed was already in
+`completedLevels`. Only the completed-levels *list* dedupes; the *score* has no such guard.
+Repeatedly navigating back to an already-finished level (via `Sidebar`) and dragging the correct
+answer in again keeps adding points every time, unbounded. Downstream effect: it can push a
+track's total score *above* the true max, which would make the "Perfectionist" badge's
+`score === maxPossibleScore` check silently un-earnable (not a crash, just permanently false)
+for anyone who's ever replayed a level.
+
+**Not fixed** — needs a product decision first, not just a code change: should replaying an
+already-completed level award nothing (pure practice mode), only count if it beats the previous
+attempt's score, or something else? Whichever is picked also needs to decide how it interacts
+with `totalTimeMs` (#9's new field) — does replaying add more time to the cumulative total too,
+compounding the same class of issue there?
 
 ---
 
@@ -240,9 +336,8 @@ Reasoning: both are "the site doesn't work on a phone" gaps, more severe than po
 underlying responsive patterns now means every later content phase (#2, #5) inherits working
 mobile behavior for free, instead of needing a second mobile-check pass after more content ships.
 
-**Phase 2 — Gameplay engine.**
-#9 (scoring) → #14 (difficulty scaling) → #11 (terminal) → #15 (leave-confirm, bundled into the
-same pass since it's the same file area).
+**Phase 2 — Gameplay engine. Shipped.**
+~~#9 (scoring)~~ → ~~#14 (difficulty scaling)~~ → ~~#11 (terminal)~~ → ~~#15 (leave-confirm)~~.
 Reasoning: #9 and #14 are explicitly linked (more zones/weighted difficulty both reduce score
 ties) and should be finalized *before* Phase 4 authors a wave of new hard-level content — new
 levels should be built against the final mechanics once, not retrofitted twice.
@@ -293,13 +388,20 @@ cheap and independent) — it just has nothing to do until course count actually
   when `levelComplete` is true, with a title tooltip ("Timer stops once a level is completed") —
   makes the frozen `0:00`/final time read as intentional instead of broken. No `game-context.tsx`
   changes needed — the timer behavior itself was already correct, only the UI was ambiguous.
-- ~~**#16. Second blocky "IDE-style" font for headline emphasis.**~~ **Fixed.** Added **Martian
-  Mono** (`next/font/google`, weight 700, `--font-martian-mono`) in `src/app/layout.tsx`,
-  exposed as a new `.text-accent-emphasis` utility class in `globals.css`, applied alongside
-  `text-accent` on all 5 emphasis spans in `src/components/landing-page.tsx`. Verified the font
-  actually resolves and compiles (checked the built HTML for the Martian Mono CSS module, no
-  build errors) — a scoped exception to the site's one-typeface rule, documented as such in both
-  files.
+- ~~**#16. Second blocky "IDE-style" font for headline emphasis.**~~ **Fixed**, then swapped once
+  more per explicit follow-up request ("use Geist Pixel"). Final: **`GeistPixelSquare`** from the
+  `geist` npm package (`geist/font/pixel` — Vercel's own pixel/terminal-style family, 5 style
+  variants exist, "Square" picked as the most legible), a self-hosted local font via
+  `next/font/local` under the hood (no Google Fonts network fetch, unlike the first pass's
+  Martian Mono). Wired in `src/app/layout.tsx`, exposed as `--font-geist-pixel-square`, applied
+  via `.text-accent-emphasis` in `globals.css` alongside `text-accent` on all 5 emphasis spans in
+  `src/components/landing-page.tsx`. Ships a single static weight (500) — `.text-accent-emphasis`
+  was corrected to `font-weight: 500` (not 700) to avoid the browser synthetically faux-bolding a
+  font that has no real bold cut. Verified live via Playwright: `getComputedStyle` confirms the
+  emphasis span's `font-size` exactly matches the parent headline's (54px = 54px, per the explicit
+  "don't change font size" instruction) and `font-family` correctly resolves to `GeistPixelSquare`;
+  screenshotted the hero and "how it works" heading to confirm the pixel letterforms actually
+  render distinctly from the surrounding JetBrains Mono text. `next build` clean.
 - **#17. SEO — see the "Still open" note inside item #17 above** (code shipped; canonical-domain
   choice flagged for the user to confirm/override; Search Console verification still manual and
   pending that confirmation) — kept in "Open items" rather than moved here, since it's not fully

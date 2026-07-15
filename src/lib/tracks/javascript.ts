@@ -235,7 +235,8 @@ export const javascriptTrack: Track = {
       title: "Destructuring in Callbacks",
       filename: "lesson7.js",
       difficulty: "hard",
-      objective: "Destructure each student object in the reduce callback to pull out just the score",
+      objective:
+        "Choose the array method that collapses the list into one total, then destructure each student object to pull out just the score",
       preview: ["170"],
       codeLines: [
         "const students = [",
@@ -243,26 +244,36 @@ export const javascriptTrack: Track = {
         '  { name: "Bo", score: 90 },',
         "];",
         "",
-        "const total = students.reduce((sum, {{zone1}}) => sum + score, 0);",
+        "const total = students.{{zone1}}((sum, {{zone2}}) => sum + score, 0);",
         "console.log(total); // 170",
       ],
-      zones: [{ id: "zone1", answer: "{ score }" }],
+      // Two independent decisions on the same line — which method accumulates a single running
+      // value, and how to destructure the callback's parameter — rather than one blank per line.
+      zones: [
+        { id: "zone1", answer: "reduce" },
+        { id: "zone2", answer: "{ score }" },
+      ],
       blocks: [
-        { id: "b1", code: "{ score }" },
-        { id: "b2", code: "score" },
-        { id: "b3", code: "{ name }" },
-        { id: "b4", code: "student" },
+        { id: "b1", code: "reduce" },
+        { id: "b2", code: "map" },
+        { id: "b3", code: "filter" },
+        { id: "b4", code: "forEach" },
+        { id: "b5", code: "{ score }" },
+        { id: "b6", code: "score" },
+        { id: "b7", code: "{ name }" },
+        { id: "b8", code: "student" },
       ],
       wormIntro:
-        "reduce's callback gets each full student object — but we only need the score! Destructure the parameter to grab just that property directly.",
+        "Two blanks this time! First: which array method collapses a whole list down into one single running total? Second: destructure the callback's parameter to grab just the score property directly.",
       wormCorrectAll:
-        "Exactly! { score } pulls the score property straight out of each student object as you receive it — no need for student.score everywhere! 🎯",
+        "Exactly! reduce() collapses the array into one running total, and { score } pulls the score property straight out of each student object as you receive it — no need for student.score everywhere! Real problems often stack two decisions like this in one line. 🎯",
       concept: {
         summary:
-          "You can destructure directly inside a function's parameter list, not just in a separate assignment — pulling out just the properties you need.",
+          "You can destructure directly inside a function's parameter list, not just in a separate assignment — pulling out just the properties you need. Picking the right array method matters just as much as the destructuring itself.",
         details: [
+          "map() and filter() both return a new array the same general shape as the input — neither can collapse a list down into one single value. reduce() is the one built for exactly that: it walks the array carrying an accumulator (sum here) forward from each call to the next, ending with one final result.",
           "({ score }) as a parameter is shorthand for \"this argument is an object — immediately unpack its score property into a variable called score.\" It's the same destructuring syntax as const { score } = student, just written inline where the parameter would normally go.",
-          "This is especially common in array methods like .map(), .filter(), and .reduce(), where the callback receives a full object but the logic only cares about one or two of its properties — destructuring in the parameter list skips writing student.score repeatedly.",
+          "This combination is extremely common in real code: reduce() (or map()/filter()) receiving a full object per callback call, destructured in the parameter list so the callback body never has to write student.score repeatedly.",
           "You can rename while destructuring too: ({ score: points }) would let you use points instead of score inside the function, useful when the property name already means something else in scope.",
         ],
         example:

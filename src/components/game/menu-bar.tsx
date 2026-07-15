@@ -2,11 +2,13 @@
 
 import { Moon, PanelLeft, PanelRight, Sun } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { AuthWidget } from "@/components/site/auth-widget";
 import { LogoMark } from "@/components/site/logo-mark";
 import { useGame } from "@/lib/game-context";
 import { useTheme } from "@/lib/theme-context";
+import { LeaveConfirmDialog } from "./leave-confirm-dialog";
 
 const navLinkClass = (active: boolean) =>
   `inline-flex h-[30px] items-center px-2.5 text-xs outline-none ${active ? "bg-nav-hover" : "hover:bg-nav-hover"}`;
@@ -16,8 +18,10 @@ const panelToggleClass = (active: boolean) =>
 
 export function MenuBar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { isDark, toggleTheme } = useTheme();
-  const { currentTrack, resetLevel, mobilePanel, toggleMobilePanel } = useGame();
+  const { currentTrack, resetLevel, mobilePanel, toggleMobilePanel, levelComplete } = useGame();
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   return (
     <div className="flex h-[30px] shrink-0 select-none items-center border-b border-border bg-menu px-2 text-xs text-text transition-colors duration-200">
@@ -34,7 +38,19 @@ export function MenuBar() {
         <LogoMark className="h-5 w-5 shrink-0" />
       </div>
 
-      <Link href="/" className={navLinkClass(false)}>
+      <Link
+        href="/"
+        onClick={(e) => {
+          // Mid-level progress is ephemeral (see game-context.tsx) — only a completed level
+          // persists. Interrupt real navigation and ask first rather than silently losing an
+          // in-progress attempt.
+          if (!levelComplete) {
+            e.preventDefault();
+            setShowLeaveConfirm(true);
+          }
+        }}
+        className={navLinkClass(false)}
+      >
         Home
       </Link>
       {/* Points at the track picker, not the current track's level 1 — "Play" reads as "let me
@@ -87,6 +103,13 @@ export function MenuBar() {
           <div key={color} className="h-[11px] w-[11px] rounded-full" style={{ background: color }} />
         ))}
       </div>
+
+      {showLeaveConfirm && (
+        <LeaveConfirmDialog
+          onCancel={() => setShowLeaveConfirm(false)}
+          onConfirm={() => router.push("/")}
+        />
+      )}
     </div>
   );
 }

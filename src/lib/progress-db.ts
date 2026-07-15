@@ -15,6 +15,7 @@ export interface LeaderboardEntry {
   image: string | null;
   totalScore: number;
   totalCompleted: number;
+  totalTimeMs: number;
 }
 
 async function progressCollection() {
@@ -28,9 +29,9 @@ export async function getUserProgress(userId: string): Promise<ProgressMap> {
   const collection = await progressCollection();
   const docs = await collection.find({ userId }).toArray();
   return Object.fromEntries(
-    docs.map(({ trackId, completedLevels, score, lastLevelIndex, updatedAt }) => [
+    docs.map(({ trackId, completedLevels, score, lastLevelIndex, updatedAt, totalTimeMs }) => [
       trackId,
-      { completedLevels, score, lastLevelIndex, updatedAt },
+      { completedLevels, score, lastLevelIndex, updatedAt, totalTimeMs },
     ]),
   );
 }
@@ -39,8 +40,8 @@ export async function getUserTrackProgress(userId: string, trackId: string): Pro
   const collection = await progressCollection();
   const doc = await collection.findOne({ userId, trackId });
   if (!doc) return null;
-  const { completedLevels, score, lastLevelIndex, updatedAt } = doc;
-  return { completedLevels, score, lastLevelIndex, updatedAt };
+  const { completedLevels, score, lastLevelIndex, updatedAt, totalTimeMs } = doc;
+  return { completedLevels, score, lastLevelIndex, updatedAt, totalTimeMs };
 }
 
 export async function upsertTrackProgress(userId: string, trackId: string, progress: TrackProgress): Promise<void> {
@@ -76,12 +77,21 @@ export async function mergeLocalProgress(userId: string, localProgress: Progress
 export async function getLeaderboard(limit = 50): Promise<LeaderboardEntry[]> {
   const collection = await progressCollection();
   const rows = await collection
-    .aggregate<{ _id: string; totalScore: number; totalCompleted: number; user: { name?: string; image?: string } }>([
+    .aggregate<{
+      _id: string;
+      totalScore: number;
+      totalCompleted: number;
+      totalTimeMs: number;
+      user: { name?: string; image?: string };
+    }>([
       {
         $group: {
           _id: "$userId",
           totalScore: { $sum: "$score" },
           totalCompleted: { $sum: { $size: "$completedLevels" } },
+          // $sum treats a missing/undefined field as 0 — progress saved before this field
+          // existed just contributes nothing, no migration needed for a tiebreaker this minor.
+          totalTimeMs: { $sum: "$totalTimeMs" },
         },
       },
       {
@@ -96,7 +106,10 @@ export async function getLeaderboard(limit = 50): Promise<LeaderboardEntry[]> {
         },
       },
       { $unwind: "$user" },
-      { $sort: { totalScore: -1 } },
+      // Higher score wins; a tied score is broken by whoever's cumulative completion time is
+      // lower (faster). Real ties across two different users' total time are vanishingly
+      // unlikely at ms precision, but any residual tie just falls back to Mongo's natural order.
+      { $sort: { totalScore: -1, totalTimeMs: 1 } },
       { $limit: limit },
     ])
     .toArray();
@@ -107,5 +120,6 @@ export async function getLeaderboard(limit = 50): Promise<LeaderboardEntry[]> {
     image: row.user.image ?? null,
     totalScore: row.totalScore,
     totalCompleted: row.totalCompleted,
+    totalTimeMs: row.totalTimeMs,
   }));
 }

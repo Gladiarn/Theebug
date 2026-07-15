@@ -3,6 +3,11 @@ export interface TrackProgress {
   score: number;
   lastLevelIndex: number;
   updatedAt: string;
+  // Cumulative real elapsed time (ms) across every level completion counted into `score` for
+  // this track — optional since progress saved before this field existed won't have it. Used
+  // only as a leaderboard tiebreaker (faster total time wins when totalScore ties), never shown
+  // as a primary stat.
+  totalTimeMs?: number;
 }
 
 export type ProgressMap = Record<string, TrackProgress>;
