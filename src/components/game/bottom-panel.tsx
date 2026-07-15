@@ -4,7 +4,9 @@ import { useGame } from "@/lib/game-context";
 import { DraggableBlock } from "./draggable-block";
 
 export function BottomPanel() {
-  const { currentLevel: level, mistakes } = useGame();
+  const { currentLevel: level, mistakes, hintedZoneId } = useGame();
+  const hintedAnswer = level.zones.find((z) => z.id === hintedZoneId)?.answer;
+  const hintedBlockId = level.blocks.find((b) => b.code === hintedAnswer)?.id;
 
   return (
     <div className="shrink-0 border-t border-border bg-panel transition-colors duration-200">
@@ -25,7 +27,12 @@ export function BottomPanel() {
 
       <div className="flex min-h-[56px] flex-wrap items-center gap-2 px-3.5 pb-3 pt-2.5">
         {level.blocks.map((block) => (
-          <DraggableBlock key={`${level.id}-${block.id}`} id={block.id} code={block.code} />
+          <DraggableBlock
+            key={`${level.id}-${block.id}`}
+            id={block.id}
+            code={block.code}
+            highlighted={block.id === hintedBlockId}
+          />
         ))}
       </div>
     </div>

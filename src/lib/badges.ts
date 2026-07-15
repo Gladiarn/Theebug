@@ -1,4 +1,3 @@
-import { getLevelMaxScore } from "@/lib/scoring";
 import type { ProgressMap } from "@/lib/progress-store";
 import type { Track } from "@/lib/tracks";
 
@@ -8,12 +7,12 @@ export interface Badge {
   description: string;
 }
 
-// Every badge here is computed purely from data already persisted (completedLevels/score per
-// track) — no new fields, no schema changes. Notably: there's no per-level "zero mistakes"
-// record kept, only each track's summed score — but since every level has a known max score
-// (getLevelMaxScore, which varies by difficulty), a track's score equalling the sum of every
-// level's max can only happen if every level in it was completed with zero mistakes, so "perfect
-// track" is still honestly derivable from existing data.
+// Every badge here is computed purely from data already persisted (completedLevels/score/
+// levelStats per track) — no new fields beyond what game-context.tsx already saves. Perfectionist
+// checks each level's persisted `perfect` flag directly (set once a level has ever been completed
+// with zero mistakes and zero hints) rather than comparing the track's total score against a
+// fixed "max possible" sum — that comparison stopped being reliable once speed/streak bonuses made
+// a level's achievable score variable instead of one fixed number per difficulty.
 export function computeBadges(progress: ProgressMap, tracks: Track[]): Badge[] {
   const badges: Badge[] = [];
   const startedTracks = tracks.filter((t) => (progress[t.id]?.completedLevels.length ?? 0) > 0);
@@ -37,8 +36,8 @@ export function computeBadges(progress: ProgressMap, tracks: Track[]): Badge[] {
         label: `${track.title} Track Complete`,
         description: `Finished every level in ${track.title}.`,
       });
-      const maxPossibleScore = track.levels.reduce((sum, l) => sum + getLevelMaxScore(l.difficulty), 0);
-      if (trackProgress.score === maxPossibleScore) {
+      const allPerfect = track.levels.every((l) => trackProgress.levelStats?.[l.id]?.perfect === true);
+      if (allPerfect) {
         badges.push({
           id: `perfect-${track.id}`,
           label: `${track.title} Perfectionist`,

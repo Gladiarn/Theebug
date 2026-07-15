@@ -24,8 +24,14 @@ test("completing a level shows the reward modal and Next Level advances", async 
   await expect(modal).toBeVisible();
   await expect(modal.getByText("Level Complete!")).toBeVisible();
   await expect(modal.getByText("What you just learned")).toBeVisible();
-  // Zero mistakes on a clean run should award the full 100 points and 3 stars.
-  await expect(modal.getByText("+100")).toBeVisible();
+  // Zero mistakes on a clean run awards the full 100 base plus a speed bonus (up to +20% for a
+  // near-instant finish, see scoring.ts) — a scripted completion is always fast enough to land
+  // somewhere in that range, but the exact ms-dependent bonus isn't deterministic enough to
+  // assert one fixed number without occasional flakiness.
+  const pointsText = await modal.locator(".text-accent.font-bold").first().textContent();
+  const points = Number(pointsText?.replace("+", ""));
+  expect(points).toBeGreaterThanOrEqual(100);
+  expect(points).toBeLessThanOrEqual(120);
 
   await modal.getByRole("button", { name: "▶ Next Level" }).click();
   await expect(page).toHaveURL(/\/play\/javascript\/2/);
@@ -47,7 +53,11 @@ test("a wrong drop reduces the awarded score and star rating", async ({ page }) 
 
   const modal = page.getByLabel("Level complete");
   await expect(modal).toBeVisible();
-  await expect(modal.getByText("+90")).toBeVisible();
+  // One mistake: 100 base - 10 mistake penalty = 90, plus the same speed-bonus range as above.
+  const pointsText = await modal.locator(".text-accent.font-bold").first().textContent();
+  const points = Number(pointsText?.replace("+", ""));
+  expect(points).toBeGreaterThanOrEqual(90);
+  expect(points).toBeLessThanOrEqual(110);
   await expect(modal.getByText("1", { exact: true })).toBeVisible();
 });
 

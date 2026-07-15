@@ -30,8 +30,9 @@ instant feedback on every choice. Wrong guesses cost nothing but a second try.
   fill-in-the-blank zones, distractor blocks, and instant correctness feedback
 - 📊 **Difficulty tiers** (Beginner / Intermediate / Advanced) per track, so lessons scale from
   first-timer to genuinely challenging
-- 🏆 **Scoring, mistakes, and a per-level timer** — clean runs score higher, with a star rating
-  and a "what you just learned" recap on every completion
+- 🏆 **A real scoring system** — difficulty-weighted base scores, a speed bonus, a streak bonus
+  for consecutive clean levels, and an optional hint system with a cost (see below) — plus a star
+  rating and a "what you just learned" recap on every completion
 - 📚 **A real documentation section** — not an afterthought: deep per-language reference docs
   with a sticky, scroll-spy sidebar
 - 👤 **Optional accounts** via GitHub OAuth — play fully anonymously with progress in
@@ -40,6 +41,29 @@ instant feedback on every choice. Wrong guesses cost nothing but a second try.
   drives every themed surface
 - ♿ Keyboard-accessible modals, a themed 404/error experience, and a mascot that actually
   reacts (proud, sad, celebrating) instead of a static icon
+
+## Scoring system
+
+Every level's score is built from five independent pieces, so two players rarely land on the
+exact same total — designed to reward mastery without punishing anyone for learning at their own
+pace.
+
+| Component | How it works |
+|---|---|
+| **Base score** | Set by difficulty — Easy 100 / Medium 150 / Hard 200. A hard level is always worth more than an easy one. |
+| **Mistake penalty** | −10% of base per wrong drop, floored at 40% of base — a rough attempt still earns something. |
+| **Hint penalty** | −20% of base per hint used (see below) — double a mistake's cost, since it reveals the actual answer. |
+| **Speed bonus** | Up to **+20%** of base for finishing well under a per-level time budget, tapering to 0% right at that budget. Never negative — taking your time never costs anything beyond simply not earning this bonus. |
+| **Streak bonus** | +5% of base for every consecutive level completed with **zero mistakes and zero hints**, up to +25% at a 6-level streak. Breaks back to zero the moment any level isn't clean. |
+
+**Hints**: stuck on a blank? The "Use a hint" button highlights the correct block for the next
+empty slot — you still have to drag it yourself, it's never auto-filled — at the cost above.
+Every level's reward screen shows the full breakdown (base, penalties, bonuses) so the system is
+never a mystery number.
+
+Replaying an already-completed level only ever *helps*: your best-ever score and fastest-ever
+time for that level are tracked independently, so a bad replay can never drag your total down and
+a good one always can raise it.
 
 ## Tech stack
 

@@ -33,7 +33,8 @@ function LogLine({ log, isError }: { log: string; isError: boolean }) {
 }
 
 export function Terminal() {
-  const { terminalLogs, mistakes, elapsedSeconds, wormMood, zoneFills, currentLevel } = useGame();
+  const { terminalLogs, mistakes, hintsUsed, cleanStreak, elapsedSeconds, wormMood, zoneFills, currentLevel } =
+    useGame();
   const [activeTab, setActiveTab] = useState<TabId>("terminal");
   const [height, setHeight] = useState(DEFAULT_HEIGHT);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -143,6 +144,12 @@ export function Terminal() {
             </div>
             <div>
               <span className="text-accent">mistakes</span>: {mistakes}
+            </div>
+            <div>
+              <span className="text-accent">hintsUsed</span>: {hintsUsed}
+            </div>
+            <div>
+              <span className="text-accent">cleanStreak</span>: {cleanStreak}
             </div>
             <div>
               <span className="text-accent">elapsedSeconds</span>: {elapsedSeconds}
