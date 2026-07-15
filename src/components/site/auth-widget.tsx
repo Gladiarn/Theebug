@@ -43,7 +43,7 @@ export function AuthWidget() {
       <button
         onClick={() => setOpen((v) => !v)}
         title={session.user.name ?? "Account"}
-        className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border outline-none transition-colors hover:border-accent"
+        className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full border border-accent outline-none transition-opacity hover:opacity-80"
       >
         {session.user.image ? (
           <Image src={session.user.image} alt="" width={24} height={24} className="h-full w-full object-cover" />

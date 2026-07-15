@@ -1,11 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { CircleCheckBig, FileCode2 } from "lucide-react";
 import { useGame } from "@/lib/game-context";
+import type { Difficulty } from "@/lib/tracks/types";
+
+const FOLDERS: { difficulty: Difficulty; label: string }[] = [
+  { difficulty: "easy", label: "easy" },
+  { difficulty: "medium", label: "medium" },
+  { difficulty: "hard", label: "hard" },
+];
 
 export function Sidebar() {
   const { currentTrack, currentLevelIndex, completedLevels, goToLevel, score, mobilePanel, closeMobilePanel } =
     useGame();
+  const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
 
   return (
     <div
@@ -24,31 +33,56 @@ export function Sidebar() {
           <span>THEEBUG</span>
         </div>
 
-        {currentTrack.levels.map((level, i) => {
-          const isActive = i === currentLevelIndex;
-          const isDone = completedLevels.includes(level.id);
+        {FOLDERS.map(({ difficulty, label }) => {
+          const entries = currentTrack.levels
+            .map((level, i) => ({ level, i }))
+            .filter(({ level }) => level.difficulty === difficulty);
+          if (entries.length === 0) return null;
+
+          const isOpen = openFolders[difficulty] ?? true;
 
           return (
-            <button
-              key={level.id}
-              onClick={() => {
-                goToLevel(i);
-                closeMobilePanel();
-              }}
-              className={`flex w-full items-center gap-1.5 border-l-2 py-1.5 pl-5 pr-2 text-left text-xs outline-none ${
-                isActive
-                  ? "border-l-accent-blue bg-sidebar-active"
-                  : "border-l-transparent hover:bg-line-hover"
-              } ${isDone ? "text-accent-green opacity-85" : "text-text"}`}
-            >
-              {isDone ? (
-                <CircleCheckBig className="h-3.5 w-3.5 shrink-0" />
-              ) : (
-                <FileCode2 className="h-3.5 w-3.5 shrink-0" />
-              )}
-              <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{level.filename}</span>
-              {isActive && !isDone && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-blue" />}
-            </button>
+            <div key={difficulty}>
+              <button
+                onClick={() => setOpenFolders((f) => ({ ...f, [difficulty]: !isOpen }))}
+                className="flex w-full items-center gap-1 px-3 py-1.5 text-left text-[11px] font-bold uppercase tracking-wide text-text-muted hover:bg-line-hover"
+                aria-expanded={isOpen}
+              >
+                <span className="text-[9px]">{isOpen ? "▼" : "▶"}</span>
+                <span>{label}</span>
+              </button>
+
+              {isOpen &&
+                entries.map(({ level, i }) => {
+                  const isActive = i === currentLevelIndex;
+                  const isDone = completedLevels.includes(level.id);
+
+                  return (
+                    <button
+                      key={level.id}
+                      onClick={() => {
+                        goToLevel(i);
+                        closeMobilePanel();
+                      }}
+                      className={`flex w-full items-center gap-1.5 border-l-2 py-1.5 pl-8 pr-2 text-left text-xs outline-none ${
+                        isActive
+                          ? "border-l-accent-blue bg-sidebar-active"
+                          : "border-l-transparent hover:bg-line-hover"
+                      } ${isDone ? "text-accent-green opacity-85" : "text-text"}`}
+                    >
+                      {isDone ? (
+                        <CircleCheckBig className="h-3.5 w-3.5 shrink-0" />
+                      ) : (
+                        <FileCode2 className="h-3.5 w-3.5 shrink-0" />
+                      )}
+                      <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
+                        {level.filename}
+                      </span>
+                      {isActive && !isDone && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-blue" />}
+                    </button>
+                  );
+                })}
+            </div>
           );
         })}
       </div>

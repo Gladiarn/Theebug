@@ -378,6 +378,11 @@ and harder/more deceptive distractor blocks generally (mentioned in the original
 "gameplay currently is lacking" ideas) — this item was specifically about proving the
 multi-block-per-line mechanic; broader mechanic ideas stay a separate future conversation.
 
+**Follow-through tracked separately as item #21** — the full mass-rollout (every track's
+medium/hard tier, not just these two prototype levels) never happened this pass; confirmed via a
+zone-count audit that difficulty still doesn't correlate with blank count anywhere except these
+two levels.
+
 ### 15. Confirm-before-leaving dialog when exiting a level mid-attempt
 
 ~~**Shipped.**~~ New `src/components/game/leave-confirm-dialog.tsx` — same accessible-dialog
@@ -491,6 +496,48 @@ tests)/`next build` all clean; full Playwright suite now 9 tests, all passing (o
 flake in `sign-in-nudge.spec.ts` on the first full run, re-confirmed 3/3 in isolation and 9/9 on
 a subsequent full run — the same class of parallel-load flakiness already documented elsewhere
 in this codebase, not a regression from this change).
+
+### 20. File Explorer — group levels into Easy/Medium/Hard folders, like a real IDE
+
+~~**Shipped.**~~ `src/components/game/sidebar.tsx` now groups each track's levels under
+collapsible `EASY` / `MEDIUM` / `HARD` folder headers (▼/▶ arrow, click to toggle), instead of a
+flat file list directly under the `THEEBUG` root — real per-level rows (icon, filename, active/
+done state) unchanged, just nested one level deeper under their difficulty folder. Folders default
+open; a track with no levels at a given tier (e.g. HTML/CSS currently have no `hard` levels) just
+omits that folder rather than showing an empty one.
+
+**Real bug caught and fixed before shipping**: the first version stored open/closed state
+inverted — `setCollapsed(f => ({ ...f, [difficulty]: !isOpen }))` next to reading it back as
+`!collapsed[difficulty]`, so the two negations canceled out and clicking a folder header did
+nothing, ever (confirmed via a scripted click + state-log trace, not just a visual glance — the
+UI looked identical whether it "worked" or not, since the default expanded state never visibly
+changed). Fixed by storing the state directly as `openFolders[difficulty]` (defaulting to `true`
+when absent) and toggling it plainly, no double negation. Re-verified via Playwright: clicking
+HARD hides its levels and flips the arrow, clicking again restores them.
+
+`tsc`/`eslint` clean, full Playwright suite (11 tests) and Vitest (19 tests) still pass, `next
+build` clean.
+
+### 21. Medium/hard levels should require noticeably more blocks than easy ones
+
+**Not started — this is the follow-through on item #14's prototype, not a new idea.** #14
+explicitly scoped itself down to "prove the multi-zone-per-line mechanic on 2 hard levels, one
+per language" before any mass rollout — that rollout never happened. Audited actual zone (blank)
+counts per level across all 7 tracks to confirm:
+
+- CSS: easy `[2,2,2]`, medium `[2,2,2]` — identical.
+- HTML: easy `[2,2,2]`, medium `[2,2]` — medium is actually *fewer*.
+- JS: easy `[2,1,1]`, medium `[1,1,1,1,1]`, hard `[1,2,1]` — no upward trend.
+- Python/React/Node.js/MongoDB: same flat pattern, mostly exactly 1 blank per level regardless of
+  tier.
+
+So right now `difficulty` is purely a scoring-multiplier label — it doesn't make a medium or hard
+level actually harder to *complete* (more blanks to place correctly), only worth more points if
+you do. Asked-for fix: rebalance so medium/hard levels genuinely need more blocks placed than
+easy ones — using the already-proven `{{zoneN}}`-per-line mechanic from #14, extended across all
+tracks' medium/hard tiers rather than just the two prototype levels. Needs care per track (each
+level's `codeLines`/`zones`/`blocks`/copy all authored together) and a check of which e2e tests
+assume specific zone counts/positions before changing anything they touch.
 
 ---
 
