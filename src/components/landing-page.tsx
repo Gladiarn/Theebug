@@ -32,6 +32,9 @@ const DebugWormScene = dynamic(
 );
 
 const TOTAL_LEVELS = TRACKS.reduce((sum, t) => sum + t.levels.length, 0);
+// The landing page only teases a handful of courses — the full catalog (with its own "Show
+// more" pagination) lives on /learn, linked right below this preview grid.
+const PREVIEW_COURSE_COUNT = 4;
 
 const STEPS = [
   {
@@ -263,7 +266,7 @@ export function LandingPage() {
             </p>
           </div>
           <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
-            {TRACKS.map((track) => (
+            {TRACKS.slice(0, PREVIEW_COURSE_COUNT).map((track) => (
               <TrackCard key={track.id} track={track} />
             ))}
           </div>

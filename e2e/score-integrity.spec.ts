@@ -5,6 +5,11 @@ import { expect, test } from "@playwright/test";
 // levelScore to the running total, so replaying an already-completed level via Sidebar inflated
 // the track's score without bound. Fixed by deriving score/totalTimeMs from a per-level
 // best-score/fastest-time map instead of incrementing a running total directly.
+//
+// Assertions compare against a captured prior score rather than a hardcoded literal — the speed
+// bonus (scoring.ts) makes the exact total depend on real elapsed ms, which isn't deterministic
+// enough to assert one fixed number without occasional flakiness, but "did the stored score go
+// up/stay the same/not change" is a precise, timing-independent comparison either way.
 
 async function readTrackProgress(page: import("@playwright/test").Page, trackId: string) {
   return page.evaluate((tid) => {
@@ -22,16 +27,17 @@ test("replaying an already-completed level with a worse attempt does not inflate
   const blocks = page.locator('div[class*="cursor-grab"]');
   const zones = page.locator('span[class*="min-w-\\[90px\\]"]');
 
-  // Clean first attempt: +100.
+  // Clean first attempt.
   await blocks.nth(0).dragTo(zones.nth(0));
   await blocks.nth(1).dragTo(zones.nth(1));
   await page.getByLabel("Level complete").waitFor({ state: "visible" });
   await page.waitForTimeout(200);
 
   let progress = await readTrackProgress(page, "javascript");
-  expect(progress.score).toBe(100);
+  const scoreAfterClean = progress.score;
+  expect(scoreAfterClean).toBeGreaterThanOrEqual(100);
 
-  // Replay the same level with 2 deliberate mistakes (a worse attempt, worth only 80).
+  // Replay the same level with 2 deliberate mistakes — strictly worse than the first attempt.
   await page.getByLabel("Level complete").getByRole("button", { name: "Review level" }).click();
   await page.waitForTimeout(200);
   await page.goto("/play/javascript/1");
@@ -45,8 +51,9 @@ test("replaying an already-completed level with a worse attempt does not inflate
   await page.waitForTimeout(200);
 
   progress = await readTrackProgress(page, "javascript");
-  // The bug this guards against would make this 180 (100 + 80), not 100.
-  expect(progress.score).toBe(100);
+  // The bug this guards against would make this scoreAfterClean + (a second, lower score) —
+  // strictly larger. The fix keeps it exactly unchanged.
+  expect(progress.score).toBe(scoreAfterClean);
 });
 
 test("replaying an already-completed level with a better attempt does improve the score", async ({ page }) => {
@@ -57,7 +64,7 @@ test("replaying an already-completed level with a better attempt does improve th
   const blocks = page.locator('div[class*="cursor-grab"]');
   const zones = page.locator('span[class*="min-w-\\[90px\\]"]');
 
-  // First attempt with one mistake: +90.
+  // First attempt with one mistake.
   await blocks.nth(2).dragTo(zones.nth(0));
   await blocks.nth(0).dragTo(zones.nth(0));
   await blocks.nth(1).dragTo(zones.nth(1));
@@ -65,9 +72,9 @@ test("replaying an already-completed level with a better attempt does improve th
   await page.waitForTimeout(200);
 
   let progress = await readTrackProgress(page, "javascript");
-  expect(progress.score).toBe(90);
+  const scoreAfterOneMistake = progress.score;
 
-  // Replay cleanly — a genuinely better attempt should raise the stored score to 100.
+  // Replay cleanly — a genuinely better attempt should raise the stored score.
   await page.getByLabel("Level complete").getByRole("button", { name: "Review level" }).click();
   await page.waitForTimeout(200);
   await page.goto("/play/javascript/1");
@@ -79,5 +86,5 @@ test("replaying an already-completed level with a better attempt does improve th
   await page.waitForTimeout(200);
 
   progress = await readTrackProgress(page, "javascript");
-  expect(progress.score).toBe(100);
+  expect(progress.score).toBeGreaterThan(scoreAfterOneMistake);
 });

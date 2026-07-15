@@ -12,9 +12,13 @@ function formatElapsed(totalSeconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function starsForMistakes(mistakes: number): number {
-  if (mistakes === 0) return 3;
-  if (mistakes <= 2) return 2;
+// A hint counts the same as a mistake here — 3 stars means "solved this purely on your own,"
+// consistent with `perfect` in progress-store.ts (which also requires zero hints, not just zero
+// mistakes).
+function starsForAttempt(mistakes: number, hintsUsed: number): number {
+  const rough = mistakes + hintsUsed;
+  if (rough === 0) return 3;
+  if (rough <= 2) return 2;
   return 1;
 }
 
@@ -25,8 +29,9 @@ export function LevelCompleteModal() {
     currentLevelIndex,
     justCompleted,
     mistakes,
+    hintsUsed,
     elapsedSeconds,
-    lastLevelPoints,
+    lastLevelScore,
     nextLevel,
     dismissReward,
   } = useGame();
@@ -73,7 +78,7 @@ export function LevelCompleteModal() {
   if (!justCompleted) return null;
 
   const isLastLevel = currentLevelIndex === currentTrack.levels.length - 1;
-  const stars = starsForMistakes(mistakes);
+  const stars = starsForAttempt(mistakes, hintsUsed);
   const { concept } = currentLevel;
 
   return (
@@ -116,7 +121,7 @@ export function LevelCompleteModal() {
 
           <div className="mb-4 grid grid-cols-3 gap-2 text-center">
             <div className="rounded border border-border bg-bg px-2 py-2">
-              <div className="font-mono text-base font-bold text-accent">+{lastLevelPoints}</div>
+              <div className="font-mono text-base font-bold text-accent">+{lastLevelScore?.total ?? 0}</div>
               <div className="text-[10px] uppercase tracking-wide text-text-muted">points</div>
             </div>
             <div className="rounded border border-border bg-bg px-2 py-2">
@@ -132,6 +137,44 @@ export function LevelCompleteModal() {
               </div>
             </div>
           </div>
+
+          {lastLevelScore &&
+            (lastLevelScore.mistakePenalty > 0 ||
+              lastLevelScore.hintPenalty > 0 ||
+              lastLevelScore.speedBonus > 0 ||
+              lastLevelScore.streakBonus > 0) && (
+              <div className="mb-4 flex flex-col gap-1 rounded border border-border bg-bg px-3 py-2.5">
+                <div className="mb-1 text-[10px] uppercase tracking-wide text-text-muted">Score breakdown</div>
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-text-muted">Base ({currentLevel.difficulty})</span>
+                  <span className="font-mono text-text">{lastLevelScore.base}</span>
+                </div>
+                {lastLevelScore.mistakePenalty > 0 && (
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-text-muted">Mistakes</span>
+                    <span className="font-mono text-accent-red">-{lastLevelScore.mistakePenalty}</span>
+                  </div>
+                )}
+                {lastLevelScore.hintPenalty > 0 && (
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-text-muted">Hints used</span>
+                    <span className="font-mono text-accent-red">-{lastLevelScore.hintPenalty}</span>
+                  </div>
+                )}
+                {lastLevelScore.speedBonus > 0 && (
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-text-muted">Speed bonus</span>
+                    <span className="font-mono text-accent-green">+{lastLevelScore.speedBonus}</span>
+                  </div>
+                )}
+                {lastLevelScore.streakBonus > 0 && (
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-text-muted">Streak bonus</span>
+                    <span className="font-mono text-accent-green">+{lastLevelScore.streakBonus}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
           <div className="rounded border border-border bg-bg px-3.5 py-3">
             <div className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-accent">

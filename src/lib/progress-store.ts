@@ -3,6 +3,12 @@
 export interface LevelStats {
   score: number;
   timeMs: number;
+  // True forever once this level has ever been completed with zero mistakes and zero hints used
+  // — a "best ever" flag like the two above, not "was the most recent attempt clean." This is
+  // what the Perfectionist badge checks per level (see badges.ts) instead of comparing the total
+  // score against a fixed max, which stopped being reliable once speed/streak bonuses made a
+  // level's achievable score variable rather than a single fixed number.
+  perfect: boolean;
 }
 
 // Keyed by Level.id. This is what `score`/`totalTimeMs` are derived from (sum of every level's

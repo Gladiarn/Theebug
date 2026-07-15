@@ -11,10 +11,10 @@ import { useTheme } from "@/lib/theme-context";
 import { LeaveConfirmDialog } from "./leave-confirm-dialog";
 
 const navLinkClass = (active: boolean) =>
-  `inline-flex h-[30px] items-center px-2.5 text-xs outline-none ${active ? "bg-nav-hover" : "hover:bg-nav-hover"}`;
+  `inline-flex h-[36px] items-center px-2.5 text-xs outline-none ${active ? "bg-nav-hover" : "hover:bg-nav-hover"}`;
 
 const panelToggleClass = (active: boolean) =>
-  `inline-flex h-[30px] w-[30px] shrink-0 items-center justify-center outline-none lg:hidden ${active ? "bg-nav-hover text-accent" : "hover:bg-nav-hover"}`;
+  `inline-flex h-[36px] w-[30px] shrink-0 items-center justify-center outline-none lg:hidden ${active ? "bg-nav-hover text-accent" : "hover:bg-nav-hover"}`;
 
 export function MenuBar() {
   const pathname = usePathname();
@@ -24,7 +24,7 @@ export function MenuBar() {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   return (
-    <div className="flex h-[30px] shrink-0 select-none items-center border-b border-border bg-menu px-2 text-xs text-text transition-colors duration-200">
+    <div className="flex h-[36px] shrink-0 select-none items-center border-b border-border bg-menu px-2 text-xs text-text transition-colors duration-200">
       <button
         onClick={() => toggleMobilePanel("sidebar")}
         title="Toggle level list"
@@ -63,7 +63,7 @@ export function MenuBar() {
       <button onClick={resetLevel} className={navLinkClass(false)}>
         Reset
       </button>
-      <span className="hidden h-[30px] cursor-default items-center px-2.5 text-xs opacity-50 lg:inline-flex">
+      <span className="hidden h-[36px] cursor-default items-center px-2.5 text-xs opacity-50 lg:inline-flex">
         Help
       </span>
 

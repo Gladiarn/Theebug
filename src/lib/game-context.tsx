@@ -12,7 +12,7 @@ import {
   type LevelStatsMap,
   type TrackProgress,
 } from "./progress-store";
-import { calculateLevelScore } from "./scoring";
+import { calculateLevelScore, type ScoreBreakdown } from "./scoring";
 import { getLevelIndexById, getTrack, type Level, type Track } from "./tracks";
 
 export type WormMood = "neutral" | "happy" | "sad" | "celebrating";
@@ -34,9 +34,17 @@ interface GameContextValue {
   terminalLogs: string[];
   levelComplete: boolean;
   mistakes: number;
+  hintsUsed: number;
+  // The zone a just-requested hint targets — highlights that zone's correct block in BottomPanel.
+  // Clears once that specific zone is filled correctly, or the level changes.
+  hintedZoneId: string | null;
+  // Consecutive clean (zero mistakes, zero hints) level completions in a row this session — not
+  // persisted, resets to 0 the instant a level finishes with any mistake or hint. Feeds the streak
+  // bonus in scoring.ts.
+  cleanStreak: number;
   elapsedSeconds: number;
   justCompleted: boolean;
-  lastLevelPoints: number;
+  lastLevelScore: ScoreBreakdown | null;
   // Below `lg` the Sidebar and RightPanel become off-canvas drawers (fixed chrome that would
   // otherwise force horizontal overflow at phone widths) — only one open at a time, toggled from
   // MenuBar. Lives here (not local component state) since MenuBar and Sidebar/RightPanel aren't
@@ -46,6 +54,7 @@ interface GameContextValue {
   toggleMobilePanel: (panel: "sidebar" | "right") => void;
   closeMobilePanel: () => void;
   dropBlock: (zoneId: string, code: string) => void;
+  useHint: () => void;
   nextLevel: () => void;
   resetLevel: () => void;
   goToLevel: (index: number) => void;
@@ -91,9 +100,15 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
   const [terminalLogs, setTerminalLogs] = useState<string[]>(["[system] Theebug ready. Happy coding!"]);
   const [levelComplete, setLevelComplete] = useState(false);
   const [mistakes, setMistakes] = useState(0);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [hintedZoneId, setHintedZoneId] = useState<string | null>(null);
+  // Ephemeral, session-only — not persisted, not hydrated. Resets per track in the hydration
+  // effect below (a track switch shouldn't carry a streak from a different track), and resets to
+  // 0 the instant any level finishes with a mistake or hint (see dropBlock).
+  const [cleanStreak, setCleanStreak] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [justCompleted, setJustCompleted] = useState(false);
-  const [lastLevelPoints, setLastLevelPoints] = useState(0);
+  const [lastLevelScore, setLastLevelScore] = useState<ScoreBreakdown | null>(null);
   // True once the hydration effect below has actually read (or fetched) saved progress for the
   // current track/auth state. Guards dropBlock so a drop can't race ahead of hydration and save
   // stale default state (score 0, no completed levels) over real saved progress — see the
@@ -119,6 +134,8 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
     setWormMessage(currentLevel.wormIntro);
     setLevelComplete(completedLevels.includes(currentLevel.id));
     setMistakes(0);
+    setHintsUsed(0);
+    setHintedZoneId(null);
     setElapsedSeconds(0);
     setJustCompleted(false);
     setMobilePanel("none");
@@ -158,6 +175,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setHydrated(false);
+    setCleanStreak(0);
     if (sessionStatus === "loading") return;
 
     if (isSignedIn) {
@@ -244,6 +262,9 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
       const allCorrect = currentLevel.zones.every((z) => nextFills[z.id]?.correct === true);
 
       setZoneFills(nextFills);
+      // A hint's highlight is only for "which block goes in this zone" — once that zone is
+      // actually correct, the hint has done its job and should stop glowing.
+      if (correct && zoneId === hintedZoneId) setHintedZoneId(null);
       if (correct) {
         addLog(`[drop] "${code}" → ${zoneId} ✓`);
       } else {
@@ -257,24 +278,35 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
       }
 
       if (allCorrect) {
-        const levelScore = calculateLevelScore(mistakes, currentLevel.difficulty);
+        // Real ms elapsed for this attempt, not the once-a-second-rounded `elapsedSeconds` used
+        // for display — this also feeds the speed bonus, so it needs to be exact, not rounded.
+        const thisAttemptMs = Date.now() - (levelStartRef.current ?? Date.now());
+        const isClean = mistakes === 0 && hintsUsed === 0;
+        const nextCleanStreak = isClean ? cleanStreak + 1 : 0;
+
+        const breakdown = calculateLevelScore({
+          difficulty: currentLevel.difficulty,
+          mistakes,
+          hintsUsed,
+          elapsedSeconds: thisAttemptMs / 1000,
+          streak: nextCleanStreak,
+        });
         const nextCompleted = completedLevels.includes(currentLevel.id)
           ? completedLevels
           : [...completedLevels, currentLevel.id];
-        // Real ms elapsed for this attempt, not the once-a-second-rounded `elapsedSeconds` used
-        // for display.
-        const thisAttemptMs = Date.now() - (levelStartRef.current ?? Date.now());
 
-        // Best-ever score and fastest-ever time for THIS level, independently — replaying a level
-        // (via Sidebar) can only ever improve or match each, never make it worse, and can never
-        // inflate the track total just by re-completing the same level (see upgrade-plan.md #19,
-        // a real bug found where every completion unconditionally added to the running total).
+        // Best-ever score, fastest-ever time, and ever-been-perfect for THIS level, each tracked
+        // independently — replaying a level (via Sidebar) can only ever improve or match the
+        // first two, never make them worse, and can never inflate the track total just by
+        // re-completing the same level (see upgrade-plan.md #19, a real bug found where every
+        // completion unconditionally added to the running total).
         const previous = levelStats[currentLevel.id];
         const nextLevelStats: LevelStatsMap = {
           ...levelStats,
           [currentLevel.id]: {
-            score: previous ? Math.max(previous.score, levelScore) : levelScore,
+            score: previous ? Math.max(previous.score, breakdown.total) : breakdown.total,
             timeMs: previous ? Math.min(previous.timeMs, thisAttemptMs) : thisAttemptMs,
+            perfect: (previous?.perfect ?? false) || isClean,
           },
         };
         const nextScore = Object.values(nextLevelStats).reduce((sum, s) => sum + s.score, 0);
@@ -284,10 +316,18 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         setWormMessage(currentLevel.wormCorrectAll);
         setLevelComplete(true);
         setScore(nextScore);
-        addLog(`[system] Level ${currentLevel.id} complete! +${levelScore} points`);
+        setCleanStreak(nextCleanStreak);
+        const bonusParts = [
+          breakdown.speedBonus > 0 ? `+${breakdown.speedBonus} speed` : null,
+          breakdown.streakBonus > 0 ? `+${breakdown.streakBonus} streak` : null,
+        ].filter(Boolean);
+        addLog(
+          `[system] Level ${currentLevel.id} complete! +${breakdown.total} points` +
+            (bonusParts.length > 0 ? ` (${bonusParts.join(", ")})` : ""),
+        );
         setCompletedLevels(nextCompleted);
         setLevelStats(nextLevelStats);
-        setLastLevelPoints(levelScore);
+        setLastLevelScore(breakdown);
         setJustCompleted(true);
         const progress: TrackProgress = {
           completedLevels: nextCompleted,
@@ -330,6 +370,9 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
       addLog,
       isSignedIn,
       mistakes,
+      hintsUsed,
+      hintedZoneId,
+      cleanStreak,
       hydrated,
     ],
   );
@@ -347,11 +390,26 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
     setWormMessage(currentLevel.wormIntro);
     setLevelComplete(false);
     setMistakes(0);
+    setHintsUsed(0);
+    setHintedZoneId(null);
     setElapsedSeconds(0);
     setJustCompleted(false);
     levelStartRef.current = Date.now();
     addLog("[system] Level reset.");
   }, [currentLevel, addLog]);
+
+  // Reveals which block is correct for the first not-yet-correct zone (never auto-fills it — the
+  // player still has to drag it themselves) at a real scoring cost, see scoring.ts's
+  // HINT_PENALTY_RATIO. Deliberately does nothing once every zone is already correct or the level
+  // itself is complete — there's nothing left to hint at that point.
+  const useHint = useCallback(() => {
+    if (!hydrated || levelComplete) return;
+    const targetZone = currentLevel.zones.find((z) => zoneFills[z.id]?.correct !== true);
+    if (!targetZone) return;
+    setHintsUsed((h) => h + 1);
+    setHintedZoneId(targetZone.id);
+    addLog(`[system] Hint used for ${targetZone.id}.`);
+  }, [hydrated, levelComplete, currentLevel, zoneFills, addLog]);
 
   const dismissReward = useCallback(() => {
     setJustCompleted(false);
@@ -387,13 +445,17 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         terminalLogs,
         levelComplete,
         mistakes,
+        hintsUsed,
+        hintedZoneId,
+        cleanStreak,
         elapsedSeconds,
         justCompleted,
-        lastLevelPoints,
+        lastLevelScore,
         mobilePanel,
         toggleMobilePanel,
         closeMobilePanel,
         dropBlock,
+        useHint,
         nextLevel,
         resetLevel,
         goToLevel,

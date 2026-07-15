@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Lightbulb } from "lucide-react";
 import { useGame, type WormMood } from "@/lib/game-context";
 import { WormMascot } from "./worm-mascot";
 
@@ -52,9 +52,14 @@ export function RightPanel() {
     zoneFills,
     elapsedSeconds,
     mobilePanel,
+    hintsUsed,
+    hintedZoneId,
+    useHint,
   } = useGame();
   const isLastLevel = currentLevelIndex === currentTrack.levels.length - 1;
   const correctCount = level.zones.filter((z) => zoneFills[z.id]?.correct === true).length;
+  const firstIncorrectZone = level.zones.find((z) => zoneFills[z.id]?.correct !== true);
+  const hintDisabled = !firstIncorrectZone || hintedZoneId === firstIncorrectZone.id;
 
   return (
     <div
@@ -118,6 +123,24 @@ export function RightPanel() {
           ))}
         </div>
       </div>
+
+      {!levelComplete && (
+        <div className="border-b border-border px-3 py-2.5">
+          <button
+            onClick={useHint}
+            disabled={hintDisabled}
+            title="Highlights the correct block for the next empty slot — costs points"
+            className={`flex w-full items-center justify-center gap-1.5 rounded border py-1.5 font-mono text-[11px] outline-none transition-colors ${
+              hintDisabled
+                ? "cursor-default border-border text-text-muted opacity-40"
+                : "cursor-pointer border-border text-text-muted hover:border-accent hover:text-accent"
+            }`}
+          >
+            <Lightbulb className="h-3 w-3" />
+            {hintsUsed > 0 ? `Hint (${hintsUsed} used)` : "Use a hint"}
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-1 flex-col items-center overflow-y-auto p-3">
         <div className="mb-2.5 self-start text-[10px] uppercase tracking-wide text-text-muted">Debug says:</div>
