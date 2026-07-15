@@ -1038,6 +1038,36 @@ Note: items 8-13 above are fresh suggestions (not yet discussed with the user) a
 response to "add more feature please" — pick whichever are actually wanted before starting any
 of them.
 
+## Repo hygiene + public-facing polish (built)
+
+- **`.gitignore`** now excludes Claude Code tooling that had been accidentally tracked:
+  `/.agents/`, `/.claude/`, `skills-lock.json`. Untracked via `git rm -r --cached` (files stay
+  on disk locally, just no longer pushed) — confirmed this only affects future commits, since
+  `.gitignore` has no retroactive effect on history already on GitHub.
+- **`README.md`** rewritten from a 9-line stub into a real project README: tagline, live link,
+  tech-stack badges, a "Why" section, feature list, tech-stack table, getting-started steps
+  (clone/install/env vars/`npm run dev`), scripts table, project structure tree, and a
+  deployment note pointing at this file for the full architecture/decision log. Env var table
+  lists variable *names* and where to obtain each value only — verified safe via `grep`ing
+  every real secret value from `.env.local` against the file (zero matches) before publishing.
+- **Custom domain**: `theebug.cc.cd` (free registrar) added under the `gladiarns-projects`
+  Vercel team, delegated to Vercel's nameservers (`ns1`/`ns2.vercel-dns.com`) rather than the
+  A-record method — confirmed via `vercel domains ls`. **Still open**: update the production
+  GitHub OAuth App's callback URL to the new domain if/when it becomes the primary URL instead
+  of `theebug.vercel.app` (classic OAuth Apps only support one callback URL each — see
+  "Deployment" above for the existing two-app split).
+
+## Where this plan.md leaves off
+
+Everything through the two sections above is **shipped and committed** (working tree clean at
+time of writing, `main`/`dev` in sync with what's described here). This file stays the
+architecture/decision-log source of truth — how things are built and why.
+
+**New user-facing change requests from here on (testing feedback, "please change X") go into
+`upgrade-plan.md`** (repo root) instead of being added here, to keep this file's job as
+"how the system is built" separate from "the current punch list of what to change next."
+Cross-reference `upgrade-plan.md` for anything currently in flight.
+
 ## Design iteration history (so we don't redo the same loop)
 
 1. Figma export → real Next.js App Router app, multi-track platform (JS/HTML/CSS), localStorage

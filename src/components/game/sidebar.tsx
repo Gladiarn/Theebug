@@ -4,10 +4,15 @@ import { CircleCheckBig, FileCode2 } from "lucide-react";
 import { useGame } from "@/lib/game-context";
 
 export function Sidebar() {
-  const { currentTrack, currentLevelIndex, completedLevels, goToLevel, score } = useGame();
+  const { currentTrack, currentLevelIndex, completedLevels, goToLevel, score, mobilePanel, closeMobilePanel } =
+    useGame();
 
   return (
-    <div className="flex w-[200px] shrink-0 flex-col overflow-hidden border-r border-border bg-sidebar text-xs text-text transition-colors duration-200">
+    <div
+      className={`fixed inset-y-0 left-0 z-40 flex w-[200px] shrink-0 flex-col overflow-hidden border-r border-border bg-sidebar text-xs text-text transition-transform duration-200 lg:static lg:translate-x-0 ${
+        mobilePanel === "sidebar" ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
       <div className="flex items-center justify-between border-b border-border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-text-muted">
         <span>Explorer</span>
         <span className="text-sm opacity-50">···</span>
@@ -26,7 +31,10 @@ export function Sidebar() {
           return (
             <button
               key={level.id}
-              onClick={() => goToLevel(i)}
+              onClick={() => {
+                goToLevel(i);
+                closeMobilePanel();
+              }}
               className={`flex w-full items-center gap-1.5 border-l-2 py-1.5 pl-5 pr-2 text-left text-xs outline-none ${
                 isActive
                   ? "border-l-accent-blue bg-sidebar-active"

@@ -281,6 +281,15 @@
   line-height: 1.05;
 }
 
+/* Scoped exception to the one-typeface rule above: only for the emphasized phrase inside a
+   landing-page headline (paired with `text-accent` for color), never used site-wide. Martian
+   Mono's blocky, terminal-display letterforms make the emphasis read stronger than color alone. */
+.text-accent-emphasis {
+  font-family: var(--font-martian-mono), var(--font-mono);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
 @keyframes caret-blink {
   0%,
   49% {

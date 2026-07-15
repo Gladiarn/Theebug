@@ -1,4 +1,4 @@
-import { Play } from "lucide-react";
+import { ArrowLeft, Play } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -40,6 +40,13 @@ export default async function TrackSyllabusPage({ params }: { params: Promise<{ 
 
   return (
     <div className="mx-auto w-full max-w-[1100px] box-border px-6 sm:px-12 py-16">
+      <Link
+        href="/learn"
+        className="mb-6 inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted transition-colors duration-150 hover:text-accent"
+      >
+        <ArrowLeft className="h-3 w-3" />
+        Browse more courses
+      </Link>
       <div className="mb-10">
         <TrackIcon trackId={t.id} className="mb-3 h-9 w-9" style={{ color: t.color }} />
         <h1 className="text-display m-0 mb-2 text-[clamp(28px,4vw,44px)] text-text">{t.title}</h1>
@@ -66,7 +73,7 @@ export default async function TrackSyllabusPage({ params }: { params: Promise<{ 
                   {levels.length} level{levels.length === 1 ? "" : "s"}
                 </span>
               </div>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-4">
                 {levels.map((level) => (
                   <LevelCard key={level.id} level={level} trackId={t.id} />
                 ))}
