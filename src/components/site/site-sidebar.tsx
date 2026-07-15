@@ -25,7 +25,7 @@ export function SiteSidebar({ open, onNavigate }: { open: boolean; onNavigate: (
           <span>THEEBUG</span>
         </div>
 
-        {SITE_PAGES.map((page) => {
+        {SITE_PAGES.filter((page) => !page.hidden).map((page) => {
           const active = page.href === "/" ? pathname === "/" : pathname.startsWith(page.href);
           return (
             <Link

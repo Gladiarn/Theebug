@@ -9,6 +9,7 @@ import {
   Play,
   Plus,
   Trophy,
+  X,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -16,6 +17,7 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { WormMascot, type MascotMood } from "@/components/game/worm-mascot";
 import { TrackCard } from "@/components/site/track-card";
+import { FAQ } from "@/lib/faq-data";
 import { TRACKS } from "@/lib/tracks";
 
 // Code-split from the shared bundle on purpose: three.js + @react-three/fiber add ~880KB
@@ -61,6 +63,25 @@ const MOODS: { mood: MascotMood; label: string }[] = [
   { mood: "neutral", label: "Neutral" },
   { mood: "celebrating", label: "Party" },
 ];
+
+// Every comparison line here is a real, checkable claim about how the game actually works —
+// no invented user counts or testimonials (there's no real data for those yet).
+const COMPARISON = [
+  {
+    old: "A blank editor and a wall of text — tutorial paralysis before you've typed a line.",
+    theebug: "Real, working code with just the puzzle pieces missing. You're never starting from zero.",
+  },
+  {
+    old: "Copy-paste along with a video, without ever testing if you actually understood it.",
+    theebug: "Every block you drag is checked instantly — right or wrong, you know immediately.",
+  },
+  {
+    old: "No feedback until something breaks, sometimes hours later.",
+    theebug: "Debug the Worm reacts to every single drop — no waiting, no guessing.",
+  },
+];
+
+const FAQ_PREVIEW = FAQ.slice(0, 3);
 
 function SectionLabel({ children }: { children: string }) {
   return (
@@ -129,6 +150,24 @@ export function LandingPage() {
         </div>
       </section>
 
+      <section className="border-y border-border bg-section-alt px-6 py-8 sm:px-12">
+        <div className="mx-auto grid w-full max-w-[1100px] grid-cols-2 gap-6 sm:grid-cols-4">
+          {[
+            { value: String(TRACKS.length), label: "courses" },
+            { value: String(TOTAL_LEVELS), label: "levels" },
+            { value: "3", label: "difficulty tiers" },
+            { value: "100%", label: "free" },
+          ].map((stat) => (
+            <div key={stat.label} className="text-center">
+              <div className="text-display text-[clamp(28px,4vw,40px)] text-accent">{stat.value}</div>
+              <div className="mt-1 font-mono text-[11px] uppercase tracking-wide text-text-muted">
+                {stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="mx-auto w-full max-w-[1100px] box-border px-6 py-[72px] sm:px-12">
         <div className="mb-10">
           <SectionLabel>how it works</SectionLabel>
@@ -167,6 +206,45 @@ export function LandingPage() {
                 </li>
               ))}
             </ul>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-border px-6 py-[72px] sm:px-12">
+        <div className="mx-auto w-full max-w-[1100px] box-border">
+          <div className="mb-10">
+            <SectionLabel>why theebug</SectionLabel>
+            <SectionHeading>
+              Not another <span className="text-accent text-accent-emphasis">blank-page tutorial</span>
+            </SectionHeading>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="overflow-hidden rounded-[10px] border border-border bg-bg">
+              <div className="border-b border-border bg-card-header px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wide text-text-muted">
+                Traditional tutorials
+              </div>
+              <div className="flex flex-col gap-4 p-4">
+                {COMPARISON.map((row) => (
+                  <div key={row.old} className="flex items-start gap-2.5">
+                    <X className="mt-0.5 h-4 w-4 shrink-0 text-accent-red" />
+                    <span className="text-[13px] leading-relaxed text-text-muted">{row.old}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="overflow-hidden rounded-[10px] border border-accent bg-bg shadow-[var(--shadow-accent)]">
+              <div className="border-b border-accent bg-badge-bg px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wide text-accent">
+                Theebug
+              </div>
+              <div className="flex flex-col gap-4 p-4">
+                {COMPARISON.map((row) => (
+                  <div key={row.theebug} className="flex items-start gap-2.5">
+                    <CircleCheckBig className="mt-0.5 h-4 w-4 shrink-0 text-accent-green" />
+                    <span className="text-[13px] leading-relaxed text-text">{row.theebug}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -254,6 +332,40 @@ export function LandingPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-border px-6 py-[72px] sm:px-12">
+        <div className="mx-auto w-full max-w-[760px] box-border">
+          <div className="mb-10">
+            <SectionLabel>faq</SectionLabel>
+            <SectionHeading>
+              Quick <span className="text-accent text-accent-emphasis">questions</span>, answered
+            </SectionHeading>
+          </div>
+          <div className="flex flex-col gap-3">
+            {FAQ_PREVIEW.map(({ q, a }) => (
+              <details key={q} className="group rounded-[10px] border border-border bg-panel px-5 py-4 open:border-accent">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-bold text-text [&::-webkit-details-marker]:hidden">
+                  {q}
+                  <Plus
+                    className="h-4 w-4 shrink-0 text-accent-green transition-transform duration-150 group-open:rotate-45"
+                    strokeWidth={2.5}
+                  />
+                </summary>
+                <p className="mt-3 text-sm leading-relaxed text-text-muted">{a}</p>
+              </details>
+            ))}
+          </div>
+          <div className="mt-6 text-center">
+            <Link
+              href="/faq"
+              className="inline-flex items-center gap-1.5 font-mono text-sm text-accent hover:underline"
+            >
+              See all FAQs
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </section>
