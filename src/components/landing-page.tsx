@@ -93,7 +93,7 @@ export function LandingPage() {
             <h1 className="text-display m-0 mb-5 text-[clamp(32px,5vw,54px)] text-text">
               You don&apos;t write the code.
               <br />
-              <span className="text-accent">You finish it.</span>
+              <span className="text-accent text-accent-emphasis">You finish it.</span>
             </h1>
 
             <p className="mb-8 max-w-[460px] text-[15px] leading-relaxed text-text-muted">
@@ -133,7 +133,7 @@ export function LandingPage() {
         <div className="mb-10">
           <SectionLabel>how it works</SectionLabel>
           <SectionHeading>
-            Three steps, <span className="text-accent">every level</span>
+            Three steps, <span className="text-accent text-accent-emphasis">every level</span>
           </SectionHeading>
         </div>
         <div className="flex flex-wrap gap-8">
@@ -176,7 +176,7 @@ export function LandingPage() {
           <div className="mb-10">
             <SectionLabel>courses</SectionLabel>
             <SectionHeading>
-              Pick a language, <span className="text-accent">start dragging</span>
+              Pick a language, <span className="text-accent text-accent-emphasis">start dragging</span>
             </SectionHeading>
             <p className="mt-2.5 text-sm leading-relaxed text-text-muted">
               {TRACKS.length} courses, {TOTAL_LEVELS} levels total. Jump into any track, or browse the full
@@ -218,7 +218,7 @@ export function LandingPage() {
           <div className="min-w-[260px] flex-1">
             <SectionLabel>meet your coach</SectionLabel>
             <SectionHeading>
-              <span className="text-accent">Debug</span> never leaves your side
+              <span className="text-accent text-accent-emphasis">Debug</span> never leaves your side
             </SectionHeading>
             <p className="my-3.5 text-sm leading-relaxed text-text-muted">
               Every action triggers a reaction from Debug. Correct answer? He wiggles with joy. Wrong block? He
@@ -262,7 +262,7 @@ export function LandingPage() {
         <Trophy className="mx-auto mb-5 h-12 w-12 text-accent" strokeWidth={1.5} />
         <div>
           <SectionHeading>
-            Your next level is <span className="text-accent">one drag away</span>
+            Your next level is <span className="text-accent text-accent-emphasis">one drag away</span>
           </SectionHeading>
           <p className="mx-auto my-4 mb-9 max-w-[420px] text-[15px] leading-relaxed text-text-muted">
             {TOTAL_LEVELS} levels across {TRACKS.length} languages — free, no account needed.

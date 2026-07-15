@@ -36,6 +36,14 @@ interface GameContextValue {
   elapsedSeconds: number;
   justCompleted: boolean;
   lastLevelPoints: number;
+  // Below `lg` the Sidebar and RightPanel become off-canvas drawers (fixed chrome that would
+  // otherwise force horizontal overflow at phone widths) — only one open at a time, toggled from
+  // MenuBar. Lives here (not local component state) since MenuBar and Sidebar/RightPanel aren't
+  // siblings under a shared parent (MenuBar renders from GameProviderShell, the panels from
+  // GamePlayShell one level down), and every one of them already consumes useGame().
+  mobilePanel: "none" | "sidebar" | "right";
+  toggleMobilePanel: (panel: "sidebar" | "right") => void;
+  closeMobilePanel: () => void;
   dropBlock: (zoneId: string, code: string) => void;
   nextLevel: () => void;
   resetLevel: () => void;
@@ -84,6 +92,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
   // stale default state (score 0, no completed levels) over real saved progress — see the
   // hydration effect's comment for why this matters.
   const [hydrated, setHydrated] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<"none" | "sidebar" | "right">("none");
   const levelStartRef = useRef<number | null>(null);
 
   const addLog = useCallback((msg: string) => {
@@ -105,6 +114,7 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
     setMistakes(0);
     setElapsedSeconds(0);
     setJustCompleted(false);
+    setMobilePanel("none");
     addLog(`[system] Level ${currentLevelIndex + 1}: ${currentLevel.title}`);
   }
 
@@ -293,6 +303,14 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
     setJustCompleted(false);
   }, []);
 
+  const toggleMobilePanel = useCallback((panel: "sidebar" | "right") => {
+    setMobilePanel((prev) => (prev === panel ? "none" : panel));
+  }, []);
+
+  const closeMobilePanel = useCallback(() => {
+    setMobilePanel("none");
+  }, []);
+
   const goToLevel = useCallback(
     (index: number) => {
       if (index < 0 || index >= track.levels.length) return;
@@ -318,6 +336,9 @@ export function GameProvider({ trackId, children }: { trackId: string; children:
         elapsedSeconds,
         justCompleted,
         lastLevelPoints,
+        mobilePanel,
+        toggleMobilePanel,
+        closeMobilePanel,
         dropBlock,
         nextLevel,
         resetLevel,

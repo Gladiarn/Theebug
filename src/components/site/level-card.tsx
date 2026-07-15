@@ -14,15 +14,15 @@ export function LevelCard({ level, trackId }: { level: Level; trackId: string })
       href={`/play/${trackId}/${level.id}`}
       className="flex cursor-pointer flex-col overflow-hidden rounded-[10px] border border-border bg-panel shadow-none transition-[border-color,transform,box-shadow] duration-150 hover:-translate-y-1 hover:border-accent hover:shadow-[var(--shadow-card-hover)]"
     >
-      <div className="flex items-center justify-between border-b border-border bg-card-header px-3.5 py-3">
-        <span className="font-mono text-[11px] text-text-muted">
+      <div className="flex flex-wrap items-center justify-between gap-1.5 border-b border-border bg-card-header px-3.5 py-3">
+        <span className="min-w-0 truncate font-mono text-[11px] text-text-muted">
           0{level.id} — {level.filename}
         </span>
-        <div className="flex items-center gap-1.5">
-          <span className={`rounded-full border px-1.5 py-0.5 text-[10px] capitalize ${DIFFICULTY_CLASS[level.difficulty]}`}>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] capitalize ${DIFFICULTY_CLASS[level.difficulty]}`}>
             {level.difficulty}
           </span>
-          <span className="rounded-lg border border-border bg-badge-bg px-2 py-0.5 text-[11px] text-accent-yellow">
+          <span className="shrink-0 rounded-lg border border-border bg-badge-bg px-2 py-0.5 text-[11px] text-accent-yellow">
             {level.title}
           </span>
         </div>

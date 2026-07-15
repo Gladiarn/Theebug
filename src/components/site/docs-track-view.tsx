@@ -1,11 +1,60 @@
 "use client";
 
-import { Lightbulb } from "lucide-react";
+import { ChevronDown, Lightbulb } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { TrackReference } from "@/lib/reference";
 import { TRACKS, type Track } from "@/lib/tracks";
 import { TrackIcon } from "./track-icon";
+
+// Mobile-only equivalent of the desktop section-jump `<aside>` below (which is `hidden` under
+// `lg`) — a sticky disclosure showing the current section, expanding into the same link list on
+// tap. Kept sticky (not just at the page top) since the whole point is being able to jump
+// sections *while* mid-scroll, not just once on page load.
+function MobileSectionNav({
+  sections,
+  active,
+}: {
+  sections: { id: string; title: string }[];
+  active: string | undefined;
+}) {
+  const [open, setOpen] = useState(false);
+  const activeSection = sections.find((s) => s.id === active);
+
+  return (
+    <div className="sticky top-0 z-10 -mx-6 mb-8 border-b border-border bg-bg px-6 sm:-mx-12 sm:px-12 lg:hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 py-3 text-left text-xs"
+      >
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="shrink-0 font-bold uppercase tracking-wide text-text-muted">Jump to:</span>
+          <span className="truncate font-bold text-accent">{activeSection?.title ?? "Contents"}</span>
+        </span>
+        <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-text-muted transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <nav aria-label="Jump to section" className="flex flex-col gap-0.5 border-t border-border py-2">
+          {sections.map((section) => (
+            <a
+              key={section.id}
+              href={`#${section.id}`}
+              onClick={() => setOpen(false)}
+              className={`rounded px-2 py-2 text-xs ${
+                active === section.id ? "bg-badge-bg font-bold text-accent" : "text-text-muted"
+              }`}
+            >
+              {section.title}
+            </a>
+          ))}
+        </nav>
+      )}
+    </div>
+  );
+}
 
 export function DocsTrackView({ track, reference }: { track: Track; reference: TrackReference }) {
   const [active, setActive] = useState(reference.sections[0]?.id);
@@ -149,6 +198,8 @@ export function DocsTrackView({ track, reference }: { track: Track; reference: T
       </aside>
 
       <div className="min-w-0 flex-1">
+        <MobileSectionNav sections={reference.sections} active={active} />
+
         <div className="mb-10">
           <TrackIcon trackId={track.id} className="mb-3 h-9 w-9" style={{ color: track.color }} />
           <h1 className="text-display m-0 mb-2 text-[clamp(28px,4vw,40px)] text-text">{track.title} Reference</h1>

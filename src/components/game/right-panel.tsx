@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckCircle2 } from "lucide-react";
 import { useGame, type WormMood } from "@/lib/game-context";
 import { WormMascot } from "./worm-mascot";
 
@@ -50,16 +51,27 @@ export function RightPanel() {
     nextLevel,
     zoneFills,
     elapsedSeconds,
+    mobilePanel,
   } = useGame();
   const isLastLevel = currentLevelIndex === currentTrack.levels.length - 1;
   const correctCount = level.zones.filter((z) => zoneFills[z.id]?.correct === true).length;
 
   return (
-    <div className="flex w-[265px] shrink-0 flex-col overflow-hidden border-l border-border bg-panel text-[13px] text-text transition-colors duration-200">
+    <div
+      className={`fixed inset-y-0 right-0 z-40 flex w-[265px] shrink-0 flex-col overflow-hidden border-l border-border bg-panel text-[13px] text-text transition-transform duration-200 lg:static lg:translate-x-0 ${
+        mobilePanel === "right" ? "translate-x-0" : "translate-x-full"
+      }`}
+    >
       <div className="flex items-center justify-between border-b border-border px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-text-muted">
         <span>Game Panel</span>
         <div className="flex items-center gap-2 normal-case tracking-normal">
-          <span className="font-mono text-xs text-text-muted">{formatElapsed(elapsedSeconds)}</span>
+          <span
+            className="flex items-center gap-1 font-mono text-xs text-text-muted"
+            title={levelComplete ? "Timer stops once a level is completed" : undefined}
+          >
+            {levelComplete && <CheckCircle2 className="h-3 w-3 text-accent-green" />}
+            {formatElapsed(elapsedSeconds)}
+          </span>
           <span className="font-mono text-xs text-accent">{score} pts</span>
         </div>
       </div>

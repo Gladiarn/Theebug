@@ -20,7 +20,7 @@ export default function LearnPage() {
           get instant feedback.
         </p>
       </div>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-4">
         {TRACKS.map((track) => (
           <TrackCard key={track.id} track={track} />
         ))}
