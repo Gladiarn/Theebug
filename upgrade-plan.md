@@ -200,6 +200,79 @@ just never trigger). Not fixed here: a real fix needs a product decision (should
 free/no-op, only count the better of two attempts, or something else) that's outside this task's
 scope — flagging it as its own open item so it doesn't get silently forgotten.
 
+**Update: fixed, see item #19 below** — best-of-per-level tracking, decided and shipped in that
+same pass.
+
+~~**Second slice shipped**: speed bonus, streak bonus, and a hint system with a cost — the pieces
+explicitly deferred above, built after the user asked for gameplay that's "hard to get good
+points, but easy enough to learn."~~
+
+- **Speed bonus** (`src/lib/scoring.ts`): up to **+20% of base** for finishing well under a
+  per-difficulty par time (easy 45s / medium 90s / hard 150s), tapering linearly to +0% right at
+  par and staying at +0% (never negative) for anyone slower — deliberately independent of
+  mistakes/hints, so a fast-but-sloppy run and a slow-but-perfect run can each still score well
+  through their own bonus. Uses the exact ms elapsed for the attempt (already computed for the
+  leaderboard tiebreaker), not the once-a-second-rounded display timer, so the bonus is precise.
+- **Streak bonus**: +5% of base per consecutive **clean** (zero mistakes, zero hints) level
+  completed in a row, capped at +25% at a 6-level streak — a single clean level isn't a "streak"
+  yet, the bonus only starts from the second consecutive one. New `cleanStreak` state in
+  `game-context.tsx`, ephemeral (not persisted), reset to 0 in the same hydration effect that
+  resets other per-track ephemeral state (so a track switch doesn't carry a streak from a
+  different track) and the instant any level finishes with a mistake or hint.
+- **Hint system with a cost** (the last item from `plan.md`'s original roadmap list): a "Use a
+  hint" button in `RightPanel` reveals which block is correct for the next empty zone — the
+  player still has to drag it themselves, it's never auto-filled — by pulsing that block's border
+  (`DraggableBlock`'s new `highlighted` prop) via `BottomPanel` deriving the target block id from
+  a new `hintedZoneId` piece of state. Costs **20% of base per hint** (double a mistake's 10%,
+  since revealing the actual answer is a bigger shortcut than a wrong guess). The highlight clears
+  automatically once that specific zone is actually filled correctly.
+- **`LevelStats` gained a `perfect: boolean` flag** (`progress-store.ts`) — true forever once a
+  level has ever been completed with zero mistakes *and* zero hints. This is a real, necessary
+  follow-on fix, not scope creep: once speed/streak bonuses made a level's achievable score
+  variable instead of one fixed number per difficulty, the Perfectionist badge's old
+  "`score === sum of per-level max`" equality check stopped being a reliable signal — `badges.ts`
+  now checks this new per-level flag directly instead, which is actually more robust than the sum
+  comparison ever was. `getLevelMaxScore` (the helper that comparison depended on) is gone from
+  `scoring.ts` entirely, being unused by anything else.
+- **Star rating now accounts for hints, not just mistakes** (`level-complete-modal.tsx`): 3 stars
+  requires zero mistakes *and* zero hints — consistent with the new `perfect` flag above. A
+  hint-assisted clean run correctly shows fewer stars than a truly unassisted one now.
+- **Reward modal shows the full breakdown**, not just a single opaque total: base (by
+  difficulty), mistake penalty, hint penalty, speed bonus, streak bonus — each row only rendered
+  when non-zero, so a first-timer's very first plain completion still sees the simple 3-stat grid
+  it always has, and the breakdown only appears once something interesting (a bonus or penalty)
+  actually happened. This was an explicit design goal, not an afterthought — "easy enough to
+  learn" means the system has to be visibly self-explanatory, not just tuned to feel right.
+- **`DEBUG CONSOLE` tab** (Terminal, from #11) extended with `hintsUsed`/`cleanStreak`, matching
+  the existing live-state-watch pattern already there for `mistakes`/`elapsedSeconds`/`wormMood`.
+- **Documented in `README.md`**, per explicit request — a new "Scoring system" section (a table
+  of all five components plus how hints/replaying work), and the existing "Scoring, mistakes, and
+  a per-level timer" feature bullet rewritten since it undersold what's actually there now.
+- **Real, necessary fixes to existing tests, not scope creep**: the speed bonus means a fast
+  scripted completion now scores *more* than the old flat 100/90, which would have broken
+  `level-complete.spec.ts`'s exact `+100`/`+90` text assertions and `score-integrity.spec.ts`'s
+  exact-number assertions. Rewrote both to compare against a captured prior value or an honest
+  range instead of a hardcoded literal — more robust to real timing variance than the original
+  exact-match assertions were, not just patched to pass.
+- Added `e2e/gameplay-bonuses.spec.ts` (2 new tests): confirms a hint highlights exactly the
+  correct block, that the highlight clears once genuinely dropped correctly, that it costs points
+  or shows in the breakdown; confirms a second consecutive clean level actually shows a streak
+  bonus a first one didn't.
+- Verified thoroughly, not just unit-tested: played through multiple real levels via scripted
+  Playwright drags reading the actual reward-modal breakdown (not just internal state), confirmed
+  the exact arithmetic by hand against the screenshotted UI (e.g. a hard level with zero mistakes
+  scored exactly +200; a hint-assisted clean run scored exactly 100 base − 20 hint penalty + 19
+  speed bonus = 99, matching the formula precisely). `tsc`/`eslint`/`vitest` (19 tests, up from
+  15)/`next build` all clean. Full Playwright suite (11 tests, up from 9) passes at
+  `--workers=2`, re-run 3 times consecutively to confirm stability given the new timing-sensitive
+  assertions — one unrelated flake in `sign-in-nudge.spec.ts` on a default-parallelism run,
+  re-confirmed 3/3 in isolation, same pre-existing class of flakiness already documented under
+  Phase 4, not a regression from this work.
+
+**Still open, by design**: hint cost/speed/streak tuning numbers (par times, bonus percentages)
+are a first real pass, not focus-tested against real players — genuinely worth revisiting once
+there's real usage data to look at, rather than guessed-at numbers that feel reasonable on paper.
+
 ### 10. Sidebar: drop Privacy, add an "Updates"/changelog page instead
 
 ~~**Shipped.**~~ New `src/app/(site)/updates/page.tsx` — a vertical release timeline (connecting
